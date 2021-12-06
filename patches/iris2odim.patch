@@ -1,0 +1,54 @@
+diff --git a/Makefile b/Makefile
+index 6395d7b..79e840a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -22,6 +22,8 @@
+ # @author Daniel Michelson and Mark Couture, Environment Canada
+ # @date 2015-10-22
+ ###########################################################################
++-include $(RAVEROOT)/rave/mkf/def.mk
++
+ .PHONY: all src modules test doc install
+ 
+ all:		src modules
+@@ -30,7 +32,9 @@ src:
+ 		$(MAKE) -C src
+ 
+ modules:
++ifeq ($(COMPILE_FOR_PYTHON), yes)
+ 		$(MAKE) -C modules
++endif
+ 
+ test:
+ 		@chmod +x ./tools/test_iris2odim.sh
+@@ -41,7 +45,10 @@ doc:
+ 
+ install:
+ 		$(MAKE) -C src install
++ifeq ($(COMPILE_FOR_PYTHON), yes)
+ 		$(MAKE) -C modules install
++endif
++		
+ 
+ .PHONY=clean
+ clean:
+diff --git a/src/Makefile b/src/Makefile
+index 9fb83a7..67dc240 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -99,12 +99,12 @@ $(IRIS2ODIMBINDEB): $(IRIS2ODIMSOURCES)
+ 
+ .PHONY=install
+ install:
+-	@"$(HLHDF_INSTALL_BIN)" -f -o -C $(LIBIRIS2ODIM) "$(prefix)/lib/$(LIBIRIS2ODIM)"
++	@"$(HLHDF_INSTALL_BIN)" -f -C $(LIBIRIS2ODIM) "$(prefix)/lib/$(LIBIRIS2ODIM)"
+ 	@for i in $(INSTALL_HEADERS) ; \
+ 	do \
+-		"$(HLHDF_INSTALL_BIN)" -f -o -m644 -C $$i "$(prefix)/include/$$i"; \
++		"$(HLHDF_INSTALL_BIN)" -f -m644 -C $$i "$(prefix)/include/$$i"; \
+ 	done
+-	"$(HLHDF_INSTALL_BIN)" -f -o -C $(IRIS2ODIMBIN) "$(prefix)/bin/$(IRIS2ODIMBIN)";
++	"$(HLHDF_INSTALL_BIN)" -f -C $(IRIS2ODIMBIN) "$(prefix)/bin/$(IRIS2ODIMBIN)";
+ 
+ .PHONY=clean
+ clean:

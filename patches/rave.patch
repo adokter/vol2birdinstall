@@ -1,0 +1,1353 @@
+diff --git a/Makefile b/Makefile
+index 5d5e130..59c25cb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -30,7 +30,9 @@ librave: def.mk
+ 	
+ .PHONY:modules
+ modules: librave
++ifeq ($(COMPILE_FOR_PYTHON), yes)
+ 	$(MAKE) -C modules
++endif
+ 
+ def.mk: def.mk.in configure
+ 	sh makelibs
+@@ -52,8 +54,10 @@ doc:
+ .PHONY:install
+ install:
+ 	$(MAKE) -C librave install
++ifeq ($(COMPILE_FOR_PYTHON), yes)
+ 	$(MAKE) -C modules install
+ 	$(MAKE) -C Lib install
++endif	
+ 	$(MAKE) -C config install
+ 	$(MAKE) -C bin install
+ 	$(MAKE) -C etc install
+diff --git a/bin/Makefile b/bin/Makefile
+index ed8f609..17b70cc 100644
+--- a/bin/Makefile
++++ b/bin/Makefile
+@@ -27,6 +27,7 @@
+ .PHONY=install
+ install:
+ 	@mkdir -p "${DESTDIR}${prefix}/bin"
++ifeq ($(COMPILE_FOR_PYTHON), yes)
+ 	@./fix_shebang.sh ${PYTHON_BIN} area_registry "${DESTDIR}${prefix}/bin"
+ 	@./fix_shebang.sh ${PYTHON_BIN} odim_injector "${DESTDIR}${prefix}/bin"
+ 	@./fix_shebang.sh ${PYTHON_BIN} odim_injector.sh "${DESTDIR}${prefix}/bin"
+@@ -49,6 +50,7 @@ install:
+ 	@./fix_shebang.sh ${PYTHON_BIN} create_tile_definition "${DESTDIR}${prefix}/bin"
+ 	@./fix_shebang.sh ${PYTHON_BIN} create_acrr_composites "${DESTDIR}${prefix}/bin"
+ 	@./fix_shebang.sh ${PYTHON_BIN} merge_files "${DESTDIR}${prefix}/bin"
++endif	
+ 	
+ .PHONY:clean
+ clean: ;
+diff --git a/configure b/configure
+index e02b7dc..1f1dbe2 100755
+--- a/configure
++++ b/configure
+@@ -643,6 +643,7 @@ EXPAT_INCLUDE_DIR
+ NUMPY_INCLUDE_DIR
+ PROJ_LIB_DIR
+ PROJ_INCLUDE_DIR
++COMPILE_FOR_PYTHON
+ GOT_ITRUNC
+ PYDEFS
+ PYCCSHARED
+@@ -657,6 +658,7 @@ PY_INCLUDES
+ PYCC
+ EGREP
+ GREP
++MACHDEP
+ AR
+ CPP
+ OBJEXT
+@@ -709,6 +711,7 @@ SHELL'
+ ac_subst_files=''
+ ac_user_opts='
+ enable_option_checking
++with_python
+ enable_py3support
+ with_py3bin
+ with_py3bin_config
+@@ -731,7 +734,8 @@ CFLAGS
+ LDFLAGS
+ LIBS
+ CPPFLAGS
+-CPP'
++CPP
++MACHDEP'
+ 
+ 
+ # Initialize some variables set by options.
+@@ -1358,6 +1362,7 @@ Optional Features:
+ Optional Packages:
+   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
++  --with-python=(yes|no)     Compile for python
+   --with-py3bin=python3  What python 3 binary to use
+   --with-py3bin-config=python3-config  What python 3 config binary to use
+   --with-python-makefile=Makefile  Where the makefile used for building python can be found
+@@ -1379,6 +1384,7 @@ Some influential environment variables:
+   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
+               you have headers in a nonstandard directory <include dir>
+   CPP         C preprocessor
++  MACHDEP     name for machine-dependent library files
+ 
+ Use these variables to override the choices made by `configure' or to help
+ it to find libraries and programs with nonstandard names/locations.
+@@ -2102,6 +2108,26 @@ fi
+ 
+ LIBS=-lm
+ 
++
++
++# Check whether --with-python was given.
++if test "${with_python+set}" = set; then :
++  withval=$with_python;
++else
++  withval=yes
++fi
++
++
++COMPILE_FOR_PYTHON=yes
++
++case $withval in
++  no)
++	COMPILE_FOR_PYTHON=no
++	;;
++  *)
++	;;
++esac
++
+ PYBIN=python
+ py3support=no
+ # Check whether --enable-py3support was given.
+@@ -2132,10 +2158,11 @@ $as_echo_n "checking what python3 binary to use... " >&6; }
+ $as_echo "$PYBIN" >&6; }
+ fi
+ 
+-PYVERSION=`$PYBIN -c "import sys; print(sys.version[:3])"`
+-PY_EXEC_INSTALLDIR=`$PYBIN -c "import sys; print(sys.exec_prefix)"`
+-
+ PY_PYTHON_BIN="$PYBIN"
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  PYVERSION=`$PYBIN -c "import sys; print(sys.version[:3])"`
++  PY_EXEC_INSTALLDIR=`$PYBIN -c "import sys; print(sys.exec_prefix)"`
++fi
+ 
+ PYCONFIG_BIN="python-config"
+ 
+@@ -2167,58 +2194,64 @@ else
+   withval=no
+ fi
+ 
+-if [ "$withval" != "no" ]; then
+-  if [ -f $withval ]; then
+-    PY_CONFIG_MAKE="$withval"
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  if [ "$withval" != "no" ]; then
++    if [ -f $withval ]; then
++      PY_CONFIG_MAKE="$withval"
++    fi
+   fi
+ fi
+ 
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  PY_CONFIGDIR=`$PYCONFIG_BIN --configdir`
++  if test $? -eq 0; then
++    if [ "x$PY_CONFIG_MAKE" = "x" ]; then
++      if [ -f "$PY_CONFIGDIR/Makefile" ]; then
++        PY_CONFIG_MAKE="$PY_CONFIGDIR/Makefile"
++      fi
++    fi
++  fi
+ 
+-PY_CONFIGDIR=`$PYCONFIG_BIN --configdir`
+-if test $? -eq 0; then
+   if [ "x$PY_CONFIG_MAKE" = "x" ]; then
+-    if [ -f "$PY_CONFIGDIR/Makefile" ]; then
+-      PY_CONFIG_MAKE="$PY_CONFIGDIR/Makefile"
++    PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
++    if [ ! -f "$PY_CONFIG_MAKE" ]; then
++      PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
+     fi
+   fi
+-fi
+ 
+-if [ "x$PY_CONFIG_MAKE" = "x" ]; then
+-  PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
+   if [ ! -f "$PY_CONFIG_MAKE" ]; then
+-    PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
++    as_fn_error $? "Could not successfully find the python Makefile" "$LINENO" 5
+   fi
+-fi
+-
+-if [ ! -f "$PY_CONFIG_MAKE" ]; then
+-  as_fn_error $? "Could not successfully find the python Makefile" "$LINENO" 5
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PY_CONFIG_MAKE" >&5
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PY_CONFIG_MAKE" >&5
+ $as_echo "$PY_CONFIG_MAKE" >&6; }
++fi
+ 
+ #
+ # Extract what compiler the python binary was compiled with
+ #
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for the compiler used for generating python\"" >&5
+-$as_echo_n "checking \"for the compiler used for generating python\"... " >&6; }
+ 
+ PYCC=
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for the compiler used for generating python\"" >&5
++$as_echo_n "checking \"for the compiler used for generating python\"... " >&6; }
+ 
+-PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYCC\"" >&5
++  PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYCC\"" >&5
+ $as_echo "\"$PYCC\"" >&6; }
+-#CC=$PYCC
++fi
+ 
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if python CC defines pthread usage" >&5
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if python CC defines pthread usage" >&5
+ $as_echo_n "checking if python CC defines pthread usage... " >&6; }
+-PYPTHREADCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | grep "pthread"`
+-PYGOTPTHREAD=no
+-if [ "$PYPTHREADCC" != "" ]; then
+-  PYGOTPTHREAD=yes
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYGOTPTHREAD" >&5
++  PYPTHREADCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | grep "pthread"`
++  PYGOTPTHREAD=no
++  if [ "$PYPTHREADCC" != "" ]; then
++    PYGOTPTHREAD=yes
++  fi
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYGOTPTHREAD" >&5
+ $as_echo "$PYGOTPTHREAD" >&6; }
++fi
+ 
+ if test -n "$ac_tool_prefix"; then
+   # Extract the first word of "${ac_tool_prefix}ranlib", so it can be a program name with args.
+@@ -3101,70 +3134,331 @@ PYLDSHARED=
+ PYCCSHARED=
+ PYDEFS=
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for python includes\"" >&5
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for python includes\"" >&5
+ $as_echo_n "checking \"for python includes\"... " >&6; }
+-PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PY_INCLUDES\"" >&5
++  PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PY_INCLUDES\"" >&5
+ $as_echo "\"$PY_INCLUDES\"" >&6; }
+-PY_INCLUDES="-I$PY_INCLUDES"
+-PY_INCLUDES=`$PYCONFIG_BIN --includes`
++  PY_INCLUDES="-I$PY_INCLUDES"
++  PY_INCLUDES=`$PYCONFIG_BIN --includes`
++fi
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for python lib site-packages\"" >&5
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for python lib site-packages\"" >&5
+ $as_echo_n "checking \"for python lib site-packages\"... " >&6; }
+-TMP_SITEPACK=`$PYBIN -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))"`
+-if [ "$TMP_SITEPACK" != "" ]; then
+-  PY_SITEPACK="$TMP_SITEPACK"
+-else
+-  PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PY_SITEPACK\"" >&5
++  TMP_SITEPACK=`$PYBIN -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))"`
++  if [ "$TMP_SITEPACK" != "" ]; then
++    PY_SITEPACK="$TMP_SITEPACK"
++  else
++    PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
++  fi
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PY_SITEPACK\"" >&5
+ $as_echo "\"$PY_SITEPACK\"" >&6; }
++fi
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for python options\"" >&5
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for python options\"" >&5
+ $as_echo_n "checking \"for python options\"... " >&6; }
+-PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[ 	]*\(.*\)/\1/p"`
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYOPT\"" >&5
++  PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[ 	]*\(.*\)/\1/p"`
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYOPT\"" >&5
+ $as_echo "\"$PYOPT\"" >&6; }
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for ldflags\"" >&5
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for ldflags\"" >&5
+ $as_echo_n "checking \"for ldflags\"... " >&6; }
+-PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[ 	]*\(.*\)/\1/p"`
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYLDFLAGS\"" >&5
++  PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[ 	]*\(.*\)/\1/p"`
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYLDFLAGS\"" >&5
+ $as_echo "\"$PYLDFLAGS\"" >&6; }
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for ldshared\"" >&5
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for ldshared\"" >&5
+ $as_echo_n "checking \"for ldshared\"... " >&6; }
+-PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[ 	]*\(.*\)/\1/p"`
+-
+-# Special hack for mac osx.
+-ISMACOS=no
+-case `uname -s` in
+- Darwin*)
+-   ISMACOS=yes
+-   ;;
+- darwin*)
+-   ISMACOS=yes
+-   ;;
+-esac
++  PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[ 	]*\(.*\)/\1/p"`
+ 
+-if [ "x$ISMACOS" = "xyes" ]; then
+-  PYLDSHARED=`echo $PYLDSHARED | sed -e "s/[ \t]-bundle[ \t]/ -dynamiclib /g"`
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYLDSHARED\"" >&5
++  # Special hack for mac osx.
++  ISMACOS=no
++  case `uname -s` in
++   Darwin*)
++     ISMACOS=yes
++     ;;
++   darwin*)
++     ISMACOS=yes
++     ;;
++  esac
++
++  if [ "x$ISMACOS" = "xyes" ]; then
++    PYLDSHARED=`echo $PYLDSHARED | sed -e "s/[ \t]-bundle[ \t]/ -dynamiclib /g"`
++  fi
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYLDSHARED\"" >&5
+ $as_echo "\"$PYLDSHARED\"" >&6; }
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for ccshared\"" >&5
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for ccshared\"" >&5
+ $as_echo_n "checking \"for ccshared\"... " >&6; }
+-PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[ 	]*\(.*\)/\1/p"`
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYCCSHARED\"" >&5
++  PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[ 	]*\(.*\)/\1/p"`
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYCCSHARED\"" >&5
+ $as_echo "\"$PYCCSHARED\"" >&6; }
+ 
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for defs\"" >&5
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking \"for defs\"" >&5
+ $as_echo_n "checking \"for defs\"... " >&6; }
+-PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[ 	]*\(.*\)/\1/p"`
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYDEFS\"" >&5
++  PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[ 	]*\(.*\)/\1/p"`
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$PYDEFS\"" >&5
+ $as_echo "\"$PYDEFS\"" >&6; }
+ 
++else
++
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking MACHDEP" >&5
++$as_echo_n "checking MACHDEP... " >&6; }
++  if test -z "$MACHDEP"
++  then
++    # avoid using uname for cross builds
++    if test "$cross_compiling" = yes; then
++       # ac_sys_system and ac_sys_release are used for setting
++       # a lot of different things including 'define_xopen_source'
++       # in the case statement below.
++	case "$host" in
++	*-*-linux-android*)
++		ac_sys_system=Linux-android
++		;;
++	*-*-linux*)
++		ac_sys_system=Linux
++		;;
++	*-*-cygwin*)
++		ac_sys_system=Cygwin
++		;;
++	*)
++		# for now, limit cross builds to known configurations
++		MACHDEP="unknown"
++		as_fn_error $? "cross build not supported for $host" "$LINENO" 5
++	esac
++	ac_sys_release=
++    else
++	ac_sys_system=`uname -s`
++	if test "$ac_sys_system" = "AIX" \
++	-o "$ac_sys_system" = "UnixWare" -o "$ac_sys_system" = "OpenUNIX"; then
++		ac_sys_release=`uname -v`
++	else
++		ac_sys_release=`uname -r`
++	fi
++    fi
++    ac_md_system=`echo $ac_sys_system |
++			tr -d '/ ' | tr '[A-Z]' '[a-z]'`
++    ac_md_release=`echo $ac_sys_release |
++			tr -d '/ ' | sed 's/^[A-Z]\.//' | sed 's/\..*//'`
++    MACHDEP="$ac_md_system$ac_md_release"
++
++    case $MACHDEP in
++	linux*) MACHDEP="linux";;
++	cygwin*) MACHDEP="cygwin";;
++	darwin*) MACHDEP="darwin";;
++	irix646) MACHDEP="irix6";;
++	'')	MACHDEP="unknown";;
++    esac
++  fi
++
++  # SHLIB_SUFFIX is the extension of shared libraries `(including the dot!)
++  # -- usually .so, .sl on HP-UX, .dll on Cygwin
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking the extension of shared libraries" >&5
++$as_echo_n "checking the extension of shared libraries... " >&6; }
++  if test -z "$SHLIB_SUFFIX"; then
++	case $ac_sys_system in
++	hp*|HP*)
++		case `uname -m` in
++			ia64) SHLIB_SUFFIX=.so;;
++	  		*)    SHLIB_SUFFIX=.sl;;
++		esac
++		;;
++	CYGWIN*)   SHLIB_SUFFIX=.dll;;
++	*)	   SHLIB_SUFFIX=.so;;
++	esac
++  fi
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SHLIB_SUFFIX" >&5
++$as_echo "$SHLIB_SUFFIX" >&6; }
++
++# LDSHARED is the ld *command* used to create shared library
++# -- "cc -G" on SunOS 5.x, "ld -shared" on IRIX 5
++# (Shared libraries in this instance are shared modules to be loaded into
++# Python, as opposed to building Python itself as a shared library.)
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking LDSHARED" >&5
++$as_echo_n "checking LDSHARED... " >&6; }
++  if test -z "$LDSHARED"
++    then
++	case $ac_sys_system/$ac_sys_release in
++	AIX*)
++		BLDSHARED="Modules/ld_so_aix \$(CC) -bI:Modules/python.exp"
++		LDSHARED="\$(LIBPL)/ld_so_aix \$(CC) -bI:\$(LIBPL)/python.exp"
++		;;
++	IRIX/5*) LDSHARED="ld -shared";;
++	IRIX*/6*) LDSHARED="ld ${SGI_ABI} -shared -all";;
++	SunOS/5*)
++		if test "$GCC" = "yes" ; then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED='$(CC) -G'
++			LDCXXSHARED='$(CXX) -G'
++		fi ;;
++	hp*|HP*)
++		if test "$GCC" = "yes" ; then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED='ld -b'
++		fi ;;
++	Darwin/1.3*)
++		LDSHARED='$(CC) -bundle'
++		LDCXXSHARED='$(CXX) -bundle'
++		if test "$enable_framework" ; then
++			# Link against the framework. All externals should be defined.
++			BLDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDCXXSHARED="$LDCXXSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++		else
++			# No framework. Ignore undefined symbols, assuming they come from Python
++			LDSHARED="$LDSHARED -undefined suppress"
++			LDCXXSHARED="$LDCXXSHARED -undefined suppress"
++		fi ;;
++	Darwin/1.4*|Darwin/5.*|Darwin/6.*)
++		LDSHARED='$(CC) -bundle'
++		LDCXXSHARED='$(CXX) -bundle'
++		if test "$enable_framework" ; then
++			# Link against the framework. All externals should be defined.
++			BLDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDCXXSHARED="$LDCXXSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++		else
++			# No framework, use the Python app as bundle-loader
++			BLDSHARED="$LDSHARED "'-bundle_loader $(BUILDPYTHON)'
++			LDSHARED="$LDSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++			LDCXXSHARED="$LDCXXSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++		fi ;;
++	Darwin/*)
++		# Use -undefined dynamic_lookup whenever possible (10.3 and later).
++		# This allows an extension to be used in any Python
++
++		dep_target_major=`echo ${MACOSX_DEPLOYMENT_TARGET} | \
++				sed 's/\([0-9]*\)\.\([0-9]*\).*/\1/'`
++		dep_target_minor=`echo ${MACOSX_DEPLOYMENT_TARGET} | \
++				sed 's/\([0-9]*\)\.\([0-9]*\).*/\2/'`
++		if test ${dep_target_major} -eq 10 && \
++		   test ${dep_target_minor} -le 2
++		then
++			# building for OS X 10.0 through 10.2
++			LDSHARED='$(CC) -bundle'
++			LDCXXSHARED='$(CXX) -bundle'
++			if test "$enable_framework" ; then
++				# Link against the framework. All externals should be defined.
++				BLDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++				LDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++				LDCXXSHARED="$LDCXXSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			else
++				# No framework, use the Python app as bundle-loader
++				BLDSHARED="$LDSHARED "'-bundle_loader $(BUILDPYTHON)'
++				LDSHARED="$LDSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++				LDCXXSHARED="$LDCXXSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++			fi
++		else
++			# building for OS X 10.3 and later
++			LDSHARED='$(CC) -bundle -undefined dynamic_lookup'
++			LDCXXSHARED='$(CXX) -bundle -undefined dynamic_lookup'
++			BLDSHARED="$LDSHARED"
++		fi
++		;;
++	Linux*|GNU*|QNX*)
++		LDSHARED='$(CC) -shared'
++		LDCXXSHARED='$(CXX) -shared';;
++	BSD/OS*/4*)
++		LDSHARED="gcc -shared"
++		LDCXXSHARED="g++ -shared";;
++	FreeBSD*)
++		if [ "`$CC -dM -E - </dev/null | grep __ELF__`" != "" ]
++		then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED="ld -Bshareable"
++		fi;;
++	OpenBSD*)
++		if [ "`$CC -dM -E - </dev/null | grep __ELF__`" != "" ]
++		then
++				LDSHARED='$(CC) -shared $(CCSHARED)'
++				LDCXXSHARED='$(CXX) -shared $(CCSHARED)'
++		else
++				case `uname -r` in
++				[01].* | 2.[0-7] | 2.[0-7].*)
++				   LDSHARED="ld -Bshareable ${LDFLAGS}"
++				   ;;
++				*)
++				   LDSHARED='$(CC) -shared $(CCSHARED)'
++				   LDCXXSHARED='$(CXX) -shared $(CCSHARED)'
++				   ;;
++				esac
++		fi;;
++	NetBSD*|DragonFly*)
++		LDSHARED='$(CC) -shared'
++		LDCXXSHARED='$(CXX) -shared';;
++	OpenUNIX*|UnixWare*)
++		if test "$GCC" = "yes" ; then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED='$(CC) -G'
++			LDCXXSHARED='$(CXX) -G'
++		fi;;
++	SCO_SV*)
++		LDSHARED='$(CC) -Wl,-G,-Bexport'
++		LDCXXSHARED='$(CXX) -Wl,-G,-Bexport';;
++	CYGWIN*)
++		LDSHARED="gcc -shared -Wl,--enable-auto-image-base"
++		LDCXXSHARED="g++ -shared -Wl,--enable-auto-image-base";;
++	*)	LDSHARED="ld";;
++	esac
++  fi
++  PYLDSHARED=$LDSHARED
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYLDSHARED" >&5
++$as_echo "$PYLDSHARED" >&6; }
++
++# CCSHARED are the C *flags* used to create objects to go into a shared
++# library (module) -- this is only needed for a few systems
++  { $as_echo "$as_me:${as_lineno-$LINENO}: checking CCSHARED" >&5
++$as_echo_n "checking CCSHARED... " >&6; }
++  if test -z "$CCSHARED"
++  then
++	case $ac_sys_system/$ac_sys_release in
++	SunOS*) if test "$GCC" = yes;
++		then CCSHARED="-fPIC";
++		elif test `uname -p` = sparc;
++		then CCSHARED="-xcode=pic32";
++		else CCSHARED="-Kpic";
++		fi;;
++	hp*|HP*) if test "$GCC" = yes;
++		 then CCSHARED="-fPIC";
++		 else CCSHARED="+z";
++		 fi;;
++	Linux-android*) ;;
++	Linux*|GNU*) CCSHARED="-fPIC";;
++	BSD/OS*/4*) CCSHARED="-fpic";;
++	FreeBSD*|NetBSD*|OpenBSD*|DragonFly*) CCSHARED="-fPIC";;
++	OpenUNIX*|UnixWare*)
++		if test "$GCC" = "yes"
++		then CCSHARED="-fPIC"
++		else CCSHARED="-KPIC"
++		fi;;
++	SCO_SV*)
++		if test "$GCC" = "yes"
++		then CCSHARED="-fPIC"
++		else CCSHARED="-Kpic -belf"
++		fi;;
++	IRIX*/6*)  case $CC in
++		   *gcc*) CCSHARED="-shared";;
++		   *) CCSHARED="";;
++		   esac;;
++	esac
++  fi
++  PYCCSHARED=$CCSHARED
++  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYCCSHARED" >&5
++$as_echo "$PYCCSHARED" >&6; }
++
++fi
++
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for itrunc in -lc" >&5
+ $as_echo_n "checking for itrunc in -lc... " >&6; }
+@@ -3209,7 +3503,6 @@ else
+ fi
+ 
+ 
+-
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for grep that handles long lines and -e" >&5
+ $as_echo_n "checking for grep that handles long lines and -e... " >&6; }
+ if ${ac_cv_path_GREP+:} false; then :
+@@ -3563,7 +3856,6 @@ $as_echo "suppressed" >&6; }
+       if [ "`echo $withval | grep ','`" = "" ]; then
+         proj_inc=$withval/include
+         proj_lib=$withval/lib
+-        echo "proj_inc=$proj_inc"
+       else
+         proj_inc="`echo $withval |cut -f1 -d,`"
+         proj_lib="`echo $withval |cut -f2 -d,`"
+@@ -3939,7 +4231,9 @@ else
+ fi
+ 
+ NUMPY_INCLUDE_DIR=
+-case $withval in
++
++if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++  case $withval in
+ 	no)
+ 		as_fn_error $? "You can not remove dependencies to numpy" "$LINENO" 5
+ 		;;
+@@ -3974,7 +4268,8 @@ case $withval in
+ 		fi
+ 		NUMPY_INCLUDE_DIR="-I$numpy_inc$numpy_inc_app"
+ 		;;
+-esac
++  esac
++fi
+ 
+ 
+ 
+@@ -3992,16 +4287,31 @@ case $withval in
+     ;;
+   *)
+     hlhdf_root="`echo $withval`"
+-    if test "xyes" = "x$hlhdf_root"; then
+-      TESTHLDIR=`$PYBIN -c "import _pyhl; print(eval(\"_pyhl.__\"+\"file__\"))"`
+-      if test $? -ne 0; then
+-        as_fn_error $? "\"Could not find hlhdf please specify --with-hlhdf=<hlhdfroot>\"" "$LINENO" 5
+-      else
+-        hlhdf_root=`echo $TESTHLDIR | sed -e"s/\/lib\/_pyhl.so//"`
++    if [ "$COMPILE_FOR_PYTHON" = "yes" ]; then
++      if test "xyes" = "x$hlhdf_root"; then
++        TESTHLDIR=`$PYBIN -c "import _pyhl; print(eval(\"_pyhl.__\"+\"file__\"))"`
++        if test $? -ne 0; then
++          as_fn_error $? "\"Could not find hlhdf please specify --with-hlhdf=<hlhdfroot>\"" "$LINENO" 5
++        else
++          hlhdf_root=`echo $TESTHLDIR | sed -e"s/\/lib\/_pyhl.so//"`
++        fi
++      fi
++    else
++      if [ "$hlhdf_root" = "yes" ]; then
++        hlhdf_root=`locate hlhdf/mkf/hldef.mk | head -1`
++        if [ $? -ne 0 ]; then
++          as_fn_error $? "\"Failed to locate hlhdf.mk defaulting to /usr/lib/hlhdf\"" "$LINENO" 5
++          hlhdf_root="/usr/lib/hlhdf"
++        fi
+       fi
+     fi
++
++    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for hlhdf root dir including mkf file" >&5
++$as_echo_n "checking for hlhdf root dir including mkf file... " >&6; }
+     if [ -f $hlhdf_root/mkf/hldef.mk ]; then
+       HLHDF_ROOTDIR=$hlhdf_root
++      { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"$HLHDF_ROOTDIR\"" >&5
++$as_echo "\"$HLHDF_ROOTDIR\"" >&6; }
+     else
+       as_fn_error $? "\"Could not find hlhdf please specify --with-hlhdf=<hlhdfroot>\"" "$LINENO" 5
+     fi
+@@ -4080,7 +4390,7 @@ else
+   withval=no
+ fi
+ 
+-
++echo "BUFRWITHVAL=$withval"
+ case $withval in
+ 	yes)
+ 		for ac_header in bufrlib.h
+@@ -4616,6 +4926,8 @@ fi
+ 
+ 
+ 
++
++
+ #Substitute the PROJ arguments
+ 
+ 
+diff --git a/configure.in b/configure.in
+index 3c3c9cb..e993316 100644
+--- a/configure.in
++++ b/configure.in
+@@ -13,6 +13,20 @@ fi
+ 
+ LIBS=-lm
+ 
++
++AC_ARG_WITH(python,[  --with-python=(yes|no)     Compile for python],
++	    ,withval=yes)
++
++COMPILE_FOR_PYTHON=yes
++
++case $withval in
++  no)
++	COMPILE_FOR_PYTHON=no
++	;;
++  *)
++	;;
++esac
++
+ dnl It is possible to turn on memory debugging within RAVE
+ PYBIN=python
+ py3support=no
+@@ -34,10 +48,11 @@ if [[ "$PYBIN" = "python3" ]]; then
+   AC_MSG_RESULT($PYBIN)
+ fi
+ 
+-PYVERSION=`$PYBIN -c "import sys; print(sys.version[[:3]])"`
+-PY_EXEC_INSTALLDIR=`$PYBIN -c "import sys; print(sys.exec_prefix)"`
+-
+ PY_PYTHON_BIN="$PYBIN"
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  PYVERSION=`$PYBIN -c "import sys; print(sys.version[[:3]])"`
++  PY_EXEC_INSTALLDIR=`$PYBIN -c "import sys; print(sys.exec_prefix)"`
++fi
+ 
+ PYCONFIG_BIN="python-config"
+ AC_ARG_WITH(py3bin-config, [  --with-py3bin-config=python3-config  What python 3 config binary to use],
+@@ -56,56 +71,62 @@ PY_CONFIG_MAKE=
+ 
+ AC_ARG_WITH(python-makefile, [  --with-python-makefile=Makefile  Where the makefile used for building python can be found],
+ 		    ,withval=no)
+-if [[ "$withval" != "no" ]]; then
+-  if [[ -f $withval ]]; then
+-    PY_CONFIG_MAKE="$withval"
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  if [[ "$withval" != "no" ]]; then
++    if [[ -f $withval ]]; then
++      PY_CONFIG_MAKE="$withval"
++    fi
+   fi
+ fi
+ 
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  PY_CONFIGDIR=`$PYCONFIG_BIN --configdir`
++  if test $? -eq 0; then
++    if [[ "x$PY_CONFIG_MAKE" = "x" ]]; then
++      if [[ -f "$PY_CONFIGDIR/Makefile" ]]; then
++        PY_CONFIG_MAKE="$PY_CONFIGDIR/Makefile"
++      fi
++    fi
++  fi
+ 
+-PY_CONFIGDIR=`$PYCONFIG_BIN --configdir`
+-if test $? -eq 0; then
+   if [[ "x$PY_CONFIG_MAKE" = "x" ]]; then
+-    if [[ -f "$PY_CONFIGDIR/Makefile" ]]; then
+-      PY_CONFIG_MAKE="$PY_CONFIGDIR/Makefile"
++    PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
++    if [[ ! -f "$PY_CONFIG_MAKE" ]]; then
++      PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
+     fi
+   fi
+-fi
+-
+-if [[ "x$PY_CONFIG_MAKE" = "x" ]]; then
+-  PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
++  
+   if [[ ! -f "$PY_CONFIG_MAKE" ]]; then
+-    PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
++    AC_MSG_ERROR(Could not successfully find the python Makefile)
+   fi
++  AC_MSG_RESULT($PY_CONFIG_MAKE)
+ fi
+ 
+-if [[ ! -f "$PY_CONFIG_MAKE" ]]; then
+-  AC_MSG_ERROR(Could not successfully find the python Makefile)
+-fi
+-AC_MSG_RESULT($PY_CONFIG_MAKE)
+-
+ #
+ # Extract what compiler the python binary was compiled with
+ #
+-AC_MSG_CHECKING("for the compiler used for generating python")
+ 
+ PYCC=
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  AC_MSG_CHECKING("for the compiler used for generating python")
+ 
+-PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
+-AC_MSG_RESULT("$PYCC")
+-#CC=$PYCC
++  PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
++  AC_MSG_RESULT("$PYCC")
++fi
+ 
+ dnl Later on we are going to check for pthread support but since we know that
+ dnl python might determine pthread flags we can at least see what python
+ dnl came up with.
+ 
+-AC_MSG_CHECKING(if python CC defines pthread usage)
+-PYPTHREADCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | grep "pthread"`
+-PYGOTPTHREAD=no
+-if [[ "$PYPTHREADCC" != "" ]]; then
+-  PYGOTPTHREAD=yes
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  AC_MSG_CHECKING(if python CC defines pthread usage)
++  PYPTHREADCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | grep "pthread"`
++  PYGOTPTHREAD=no
++  if [[ "$PYPTHREADCC" != "" ]]; then
++    PYGOTPTHREAD=yes
++  fi
++  AC_MSG_RESULT($PYGOTPTHREAD)
+ fi
+-AC_MSG_RESULT($PYGOTPTHREAD)
+ 
+ AC_PROG_RANLIB
+ AC_PROG_CC($PYCC gcc cc)
+@@ -123,59 +144,312 @@ PYLDSHARED=
+ PYCCSHARED=
+ PYDEFS=
+ 
+-AC_MSG_CHECKING("for python includes")
+-PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
+-AC_MSG_RESULT("$PY_INCLUDES")
+-PY_INCLUDES="-I$PY_INCLUDES"
+-PY_INCLUDES=`$PYCONFIG_BIN --includes`
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  AC_MSG_CHECKING("for python includes")
++  PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
++  AC_MSG_RESULT("$PY_INCLUDES")
++  PY_INCLUDES="-I$PY_INCLUDES"
++  PY_INCLUDES=`$PYCONFIG_BIN --includes`
++fi
+ 
+-AC_MSG_CHECKING("for python lib site-packages")
+-TMP_SITEPACK=`$PYBIN -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))"`
+-if [[ "$TMP_SITEPACK" != "" ]]; then
+-  PY_SITEPACK="$TMP_SITEPACK"
+-else
+-  PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  AC_MSG_CHECKING("for python lib site-packages")
++  TMP_SITEPACK=`$PYBIN -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))"`
++  if [[ "$TMP_SITEPACK" != "" ]]; then
++    PY_SITEPACK="$TMP_SITEPACK"
++  else
++    PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
++  fi
++  AC_MSG_RESULT("$PY_SITEPACK")
+ fi
+-AC_MSG_RESULT("$PY_SITEPACK")
+ 
+ dnl Checks for typedefs, structures and compiler characteristics
+-AC_MSG_CHECKING("for python options")
+-PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[[ 	]]*\(.*\)/\1/p"`
+-AC_MSG_RESULT("$PYOPT")
+-
+-AC_MSG_CHECKING("for ldflags")
+-PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[[ 	]]*\(.*\)/\1/p"`
+-AC_MSG_RESULT("$PYLDFLAGS")
+-
+-AC_MSG_CHECKING("for ldshared")
+-PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[[ 	]]*\(.*\)/\1/p"`
+-
+-# Special hack for mac osx.
+-ISMACOS=no
+-case `uname -s` in
+- Darwin*)
+-   ISMACOS=yes
+-   ;;
+- darwin*)
+-   ISMACOS=yes
+-   ;;
+-esac
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  AC_MSG_CHECKING("for python options")
++  PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[[ 	]]*\(.*\)/\1/p"`
++  AC_MSG_RESULT("$PYOPT")
++
++  AC_MSG_CHECKING("for ldflags")
++  PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[[ 	]]*\(.*\)/\1/p"`
++  AC_MSG_RESULT("$PYLDFLAGS")
++
++  AC_MSG_CHECKING("for ldshared")
++  PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[[ 	]]*\(.*\)/\1/p"`
++
++  # Special hack for mac osx.
++  ISMACOS=no
++  case `uname -s` in
++   Darwin*)
++     ISMACOS=yes
++     ;;
++   darwin*)
++     ISMACOS=yes
++     ;;
++  esac
++
++  if [[ "x$ISMACOS" = "xyes" ]]; then
++    PYLDSHARED=`echo $PYLDSHARED | sed -e "s/[[ \t]]-bundle[[ \t]]/ -dynamiclib /g"`
++  fi
++  AC_MSG_RESULT("$PYLDSHARED")
+ 
+-if [[ "x$ISMACOS" = "xyes" ]]; then
+-  PYLDSHARED=`echo $PYLDSHARED | sed -e "s/[[ \t]]-bundle[[ \t]]/ -dynamiclib /g"`
+-fi
+-AC_MSG_RESULT("$PYLDSHARED")
++  AC_MSG_CHECKING("for ccshared")
++  PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[[ 	]]*\(.*\)/\1/p"`
++  AC_MSG_RESULT("$PYCCSHARED")
+ 
+-AC_MSG_CHECKING("for ccshared")
+-PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[[ 	]]*\(.*\)/\1/p"`
+-AC_MSG_RESULT("$PYCCSHARED")
++  AC_MSG_CHECKING("for defs")
++  PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[[ 	]]*\(.*\)/\1/p"`
++  AC_MSG_RESULT("$PYDEFS")
+ 
+-AC_MSG_CHECKING("for defs")
+-PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[[ 	]]*\(.*\)/\1/p"`
+-AC_MSG_RESULT("$PYDEFS")
++else
++  AC_ARG_VAR([MACHDEP], [name for machine-dependent library files])
++  AC_MSG_CHECKING(MACHDEP)
++  if test -z "$MACHDEP"
++  then
++    # avoid using uname for cross builds
++    if test "$cross_compiling" = yes; then
++       # ac_sys_system and ac_sys_release are used for setting
++       # a lot of different things including 'define_xopen_source'
++       # in the case statement below.
++	case "$host" in
++	*-*-linux-android*)
++		ac_sys_system=Linux-android
++		;;
++	*-*-linux*)
++		ac_sys_system=Linux
++		;;
++	*-*-cygwin*)
++		ac_sys_system=Cygwin
++		;;
++	*)
++		# for now, limit cross builds to known configurations
++		MACHDEP="unknown"
++		AC_MSG_ERROR([cross build not supported for $host])
++	esac
++	ac_sys_release=
++    else
++	ac_sys_system=`uname -s`
++	if test "$ac_sys_system" = "AIX" \
++	-o "$ac_sys_system" = "UnixWare" -o "$ac_sys_system" = "OpenUNIX"; then
++		ac_sys_release=`uname -v`
++	else
++		ac_sys_release=`uname -r`
++	fi
++    fi
++    ac_md_system=`echo $ac_sys_system |
++			tr -d '[/ ]' | tr '[[A-Z]]' '[[a-z]]'`
++    ac_md_release=`echo $ac_sys_release |
++			tr -d '[/ ]' | sed 's/^[[A-Z]]\.//' | sed 's/\..*//'`
++    MACHDEP="$ac_md_system$ac_md_release"
++
++    case $MACHDEP in
++	linux*) MACHDEP="linux";;
++	cygwin*) MACHDEP="cygwin";;
++	darwin*) MACHDEP="darwin";;
++	irix646) MACHDEP="irix6";;
++	'')	MACHDEP="unknown";;
++    esac
++  fi
++  
++  # SHLIB_SUFFIX is the extension of shared libraries `(including the dot!)
++  # -- usually .so, .sl on HP-UX, .dll on Cygwin
++  AC_MSG_CHECKING(the extension of shared libraries)
++  if test -z "$SHLIB_SUFFIX"; then
++	case $ac_sys_system in
++	hp*|HP*)
++		case `uname -m` in
++			ia64) SHLIB_SUFFIX=.so;;
++	  		*)    SHLIB_SUFFIX=.sl;;
++		esac
++		;;
++	CYGWIN*)   SHLIB_SUFFIX=.dll;;
++	*)	   SHLIB_SUFFIX=.so;;
++	esac
++  fi
++  AC_MSG_RESULT($SHLIB_SUFFIX)
++
++# LDSHARED is the ld *command* used to create shared library
++# -- "cc -G" on SunOS 5.x, "ld -shared" on IRIX 5
++# (Shared libraries in this instance are shared modules to be loaded into
++# Python, as opposed to building Python itself as a shared library.)
++  AC_MSG_CHECKING(LDSHARED)
++  if test -z "$LDSHARED"
++    then
++	case $ac_sys_system/$ac_sys_release in
++	AIX*)
++		BLDSHARED="Modules/ld_so_aix \$(CC) -bI:Modules/python.exp"
++		LDSHARED="\$(LIBPL)/ld_so_aix \$(CC) -bI:\$(LIBPL)/python.exp"
++		;;
++	IRIX/5*) LDSHARED="ld -shared";;
++	IRIX*/6*) LDSHARED="ld ${SGI_ABI} -shared -all";;
++	SunOS/5*)
++		if test "$GCC" = "yes" ; then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED='$(CC) -G'
++			LDCXXSHARED='$(CXX) -G'
++		fi ;;
++	hp*|HP*)
++		if test "$GCC" = "yes" ; then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED='ld -b'
++		fi ;;
++	Darwin/1.3*)
++		LDSHARED='$(CC) -bundle'
++		LDCXXSHARED='$(CXX) -bundle'
++		if test "$enable_framework" ; then
++			# Link against the framework. All externals should be defined.
++			BLDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDCXXSHARED="$LDCXXSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++		else
++			# No framework. Ignore undefined symbols, assuming they come from Python
++			LDSHARED="$LDSHARED -undefined suppress"
++			LDCXXSHARED="$LDCXXSHARED -undefined suppress"
++		fi ;;
++	Darwin/1.4*|Darwin/5.*|Darwin/6.*)
++		LDSHARED='$(CC) -bundle'
++		LDCXXSHARED='$(CXX) -bundle'
++		if test "$enable_framework" ; then
++			# Link against the framework. All externals should be defined.
++			BLDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			LDCXXSHARED="$LDCXXSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++		else
++			# No framework, use the Python app as bundle-loader
++			BLDSHARED="$LDSHARED "'-bundle_loader $(BUILDPYTHON)'
++			LDSHARED="$LDSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++			LDCXXSHARED="$LDCXXSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++		fi ;;
++	Darwin/*)
++		# Use -undefined dynamic_lookup whenever possible (10.3 and later).
++		# This allows an extension to be used in any Python
++
++		dep_target_major=`echo ${MACOSX_DEPLOYMENT_TARGET} | \
++				sed 's/\([[0-9]]*\)\.\([[0-9]]*\).*/\1/'`
++		dep_target_minor=`echo ${MACOSX_DEPLOYMENT_TARGET} | \
++				sed 's/\([[0-9]]*\)\.\([[0-9]]*\).*/\2/'`
++		if test ${dep_target_major} -eq 10 && \
++		   test ${dep_target_minor} -le 2
++		then
++			# building for OS X 10.0 through 10.2
++			LDSHARED='$(CC) -bundle'
++			LDCXXSHARED='$(CXX) -bundle'
++			if test "$enable_framework" ; then
++				# Link against the framework. All externals should be defined.
++				BLDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++				LDSHARED="$LDSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++				LDCXXSHARED="$LDCXXSHARED "'$(PYTHONFRAMEWORKPREFIX)/$(PYTHONFRAMEWORKDIR)/Versions/$(VERSION)/$(PYTHONFRAMEWORK)'
++			else
++				# No framework, use the Python app as bundle-loader
++				BLDSHARED="$LDSHARED "'-bundle_loader $(BUILDPYTHON)'
++				LDSHARED="$LDSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++				LDCXXSHARED="$LDCXXSHARED "'-bundle_loader $(BINDIR)/python$(VERSION)$(EXE)'
++			fi
++		else
++			# building for OS X 10.3 and later
++			LDSHARED='$(CC) -bundle -undefined dynamic_lookup'
++			LDCXXSHARED='$(CXX) -bundle -undefined dynamic_lookup'
++			BLDSHARED="$LDSHARED"
++		fi
++		;;
++	Linux*|GNU*|QNX*)
++		LDSHARED='$(CC) -shared'
++		LDCXXSHARED='$(CXX) -shared';;
++	BSD/OS*/4*)
++		LDSHARED="gcc -shared"
++		LDCXXSHARED="g++ -shared";;
++	FreeBSD*)
++		if [[ "`$CC -dM -E - </dev/null | grep __ELF__`" != "" ]]
++		then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED="ld -Bshareable"
++		fi;;
++	OpenBSD*)
++		if [[ "`$CC -dM -E - </dev/null | grep __ELF__`" != "" ]]
++		then
++				LDSHARED='$(CC) -shared $(CCSHARED)'
++				LDCXXSHARED='$(CXX) -shared $(CCSHARED)'
++		else
++				case `uname -r` in
++				[[01]].* | 2.[[0-7]] | 2.[[0-7]].*)
++				   LDSHARED="ld -Bshareable ${LDFLAGS}"
++				   ;;
++				*)
++				   LDSHARED='$(CC) -shared $(CCSHARED)'
++				   LDCXXSHARED='$(CXX) -shared $(CCSHARED)'
++				   ;;
++				esac
++		fi;;
++	NetBSD*|DragonFly*)
++		LDSHARED='$(CC) -shared'
++		LDCXXSHARED='$(CXX) -shared';;
++	OpenUNIX*|UnixWare*)
++		if test "$GCC" = "yes" ; then
++			LDSHARED='$(CC) -shared'
++			LDCXXSHARED='$(CXX) -shared'
++		else
++			LDSHARED='$(CC) -G'
++			LDCXXSHARED='$(CXX) -G'
++		fi;;
++	SCO_SV*)
++		LDSHARED='$(CC) -Wl,-G,-Bexport'
++		LDCXXSHARED='$(CXX) -Wl,-G,-Bexport';;
++	CYGWIN*)
++		LDSHARED="gcc -shared -Wl,--enable-auto-image-base"
++		LDCXXSHARED="g++ -shared -Wl,--enable-auto-image-base";;
++	*)	LDSHARED="ld";;
++	esac
++  fi
++  PYLDSHARED=$LDSHARED
++  AC_MSG_RESULT($PYLDSHARED)
++
++# CCSHARED are the C *flags* used to create objects to go into a shared
++# library (module) -- this is only needed for a few systems
++  AC_MSG_CHECKING(CCSHARED)
++  if test -z "$CCSHARED"
++  then
++	case $ac_sys_system/$ac_sys_release in
++	SunOS*) if test "$GCC" = yes;
++		then CCSHARED="-fPIC";
++		elif test `uname -p` = sparc;
++		then CCSHARED="-xcode=pic32";
++		else CCSHARED="-Kpic";
++		fi;;
++	hp*|HP*) if test "$GCC" = yes;
++		 then CCSHARED="-fPIC";
++		 else CCSHARED="+z";
++		 fi;;
++	Linux-android*) ;;
++	Linux*|GNU*) CCSHARED="-fPIC";;
++	BSD/OS*/4*) CCSHARED="-fpic";;
++	FreeBSD*|NetBSD*|OpenBSD*|DragonFly*) CCSHARED="-fPIC";;
++	OpenUNIX*|UnixWare*)
++		if test "$GCC" = "yes"
++		then CCSHARED="-fPIC"
++		else CCSHARED="-KPIC"
++		fi;;
++	SCO_SV*)
++		if test "$GCC" = "yes"
++		then CCSHARED="-fPIC"
++		else CCSHARED="-Kpic -belf"
++		fi;;
++	IRIX*/6*)  case $CC in
++		   *gcc*) CCSHARED="-shared";;
++		   *) CCSHARED="";;
++		   esac;;
++	esac
++  fi
++  PYCCSHARED=$CCSHARED
++  AC_MSG_RESULT($PYCCSHARED)
+ 
+-AC_CHECK_LIB(c,itrunc,GOT_ITRUNC=,GOT_ITRUNC=-DCREATE_ITRUNC)
++fi
+ 
++AC_CHECK_LIB(c,itrunc,GOT_ITRUNC=,GOT_ITRUNC=-DCREATE_ITRUNC)
+ dnl Checks for header files.
+ AC_HEADER_STDC
+ AC_CHECK_HEADERS(math.h stdlib.h)
+@@ -202,7 +476,6 @@ case $withval in
+       if [[ "`echo $withval | grep ','`" = "" ]]; then
+         proj_inc=$withval/include
+         proj_lib=$withval/lib
+-        echo "proj_inc=$proj_inc"
+       else
+         proj_inc="`echo $withval |cut -f1 -d,`"
+         proj_lib="`echo $withval |cut -f2 -d,`"
+@@ -319,7 +592,9 @@ dnl -----------------------------
+ AC_ARG_WITH(numpy,[  --with-numpy=INC     Use the numpy include file],
+ 		,withval=yes)
+ NUMPY_INCLUDE_DIR=
+-case $withval in
++
++if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++  case $withval in
+ 	no)
+ 		AC_MSG_ERROR(You can not remove dependencies to numpy)
+ 		;;
+@@ -354,7 +629,8 @@ case $withval in
+ 		fi
+ 		NUMPY_INCLUDE_DIR="-I$numpy_inc$numpy_inc_app"
+ 		;;
+-esac
++  esac
++fi
+ 
+ dnl -----------------------------
+ dnl Is the hlhdf present? It has a header file 'hlhdf.h' and a library -lhlhdf.
+@@ -375,16 +651,29 @@ case $withval in
+     ;;
+   *)
+     hlhdf_root="`echo $withval`"
+-    if test "xyes" = "x$hlhdf_root"; then
+-      TESTHLDIR=`$PYBIN -c "import _pyhl; print(eval(\"_pyhl.__\"+\"file__\"))"`
+-      if test $? -ne 0; then
+-        AC_MSG_ERROR("Could not find hlhdf please specify --with-hlhdf=<hlhdfroot>")
+-      else
+-        hlhdf_root=`echo $TESTHLDIR | sed -e"s/\/lib\/_pyhl.so//"`
++    if [[ "$COMPILE_FOR_PYTHON" = "yes" ]]; then
++      if test "xyes" = "x$hlhdf_root"; then
++        TESTHLDIR=`$PYBIN -c "import _pyhl; print(eval(\"_pyhl.__\"+\"file__\"))"`
++        if test $? -ne 0; then
++          AC_MSG_ERROR("Could not find hlhdf please specify --with-hlhdf=<hlhdfroot>")
++        else
++          hlhdf_root=`echo $TESTHLDIR | sed -e"s/\/lib\/_pyhl.so//"`
++        fi
++      fi
++    else
++      if [[ "$hlhdf_root" = "yes" ]]; then
++        hlhdf_root=`locate hlhdf/mkf/hldef.mk | head -1`
++        if [[ $? -ne 0 ]]; then
++          AC_MSG_ERROR("Failed to locate hlhdf.mk defaulting to /usr/lib/hlhdf")
++          hlhdf_root="/usr/lib/hlhdf"
++        fi
+       fi
+     fi
++
++    AC_MSG_CHECKING(for hlhdf root dir including mkf file)
+     if [[ -f $hlhdf_root/mkf/hldef.mk ]]; then
+       HLHDF_ROOTDIR=$hlhdf_root
++      AC_MSG_RESULT("$HLHDF_ROOTDIR")
+     else
+       AC_MSG_ERROR("Could not find hlhdf please specify --with-hlhdf=<hlhdfroot>")
+     fi
+@@ -449,7 +738,7 @@ BUFR_TABLE_DIR=
+ BUFR_SUPPRESSED=yes
+ AC_ARG_WITH(bufr,[  --with-bufr=ROOT       Use the bufr library],
+ 		,withval=no)
+-		
++echo "BUFRWITHVAL=$withval"		
+ case $withval in
+ 	yes)
+ 		AC_CHECK_HEADERS(bufrlib.h,GOT_BUFR_INC=yes)
+@@ -696,6 +985,8 @@ AC_SUBST(PYCCSHARED)
+ AC_SUBST(PYDEFS)
+ AC_SUBST(GOT_ITRUNC)
+ 
++AC_SUBST(COMPILE_FOR_PYTHON)
++
+ #Substitute the PROJ arguments
+ AC_SUBST(PROJ_INCLUDE_DIR)
+ AC_SUBST(PROJ_LIB_DIR)
+diff --git a/def.mk.in b/def.mk.in
+index d442eb2..2d4022a 100644
+--- a/def.mk.in
++++ b/def.mk.in
+@@ -23,6 +23,8 @@ PYTHON_INCLUDE_FLAG=@PY_INCLUDES@
+ SITEPACK_PYTHON= @PY_SITEPACK@
+ PYTHON_BIN= @PY_PYTHON_BIN@
+ 
++COMPILE_FOR_PYTHON= @COMPILE_FOR_PYTHON@
++
+ CREATE_ITRUNC= @GOT_ITRUNC@
+ 
+ PROJ_INCLUDE_DIR=@PROJ_INCLUDE_DIR@
+diff --git a/librave/Makefile b/librave/Makefile
+index 1de0711..86de2a7 100644
+--- a/librave/Makefile
++++ b/librave/Makefile
+@@ -18,7 +18,9 @@ libtoolbox:
+ 	$(MAKE) -C toolbox
+ 
+ libpyapi:
++ifeq ($(COMPILE_FOR_PYTHON), yes)
+ 	$(MAKE) -C pyapi
++endif
+ 
+ libscansun:
+ 	$(MAKE) -C scansun
+@@ -29,7 +31,9 @@ libradvol:
+ .PHONY=install
+ install:
+ 	$(MAKE) -C toolbox install
++ifeq ($(COMPILE_FOR_PYTHON), yes)
+ 	$(MAKE) -C pyapi install
++endif
+ 	$(MAKE) -C scansun install
+ ifeq ($(EXPAT_SUPPRESSED), no)
+ 	$(MAKE) -C radvol install
+@@ -49,4 +53,4 @@ distclean:	clean
+ 	-$(MAKE) -C pyapi distclean
+ 	-$(MAKE) -C scansun distclean
+ 	-$(MAKE) -C radvol distclean
+-	
+\ No newline at end of file
++	
+diff --git a/librave/scansun/Makefile b/librave/scansun/Makefile
+index 8ade1bd..9d5a619 100644
+--- a/librave/scansun/Makefile
++++ b/librave/scansun/Makefile
+@@ -82,12 +82,12 @@ bin:
+ 
+ .PHONY=install
+ install:
+-	@"$(HLHDF_INSTALL_BIN)" -f -o -C $(LIBRAVESCANSUN) "${DESTDIR}$(prefix)/lib/$(LIBRAVESCANSUN)"
++	@"$(HLHDF_INSTALL_BIN)" -f -C $(LIBRAVESCANSUN) "${DESTDIR}$(prefix)/lib/$(LIBRAVESCANSUN)"
+ 	@for i in $(INSTALL_HEADERS) ; \
+ 	do \
+-		"$(HLHDF_INSTALL_BIN)" -f -o -m644 -C $$i "${DESTDIR}$(prefix)/include/$$i"; \
++		"$(HLHDF_INSTALL_BIN)" -f -m644 -C $$i "${DESTDIR}$(prefix)/include/$$i"; \
+ 	done
+-	"$(HLHDF_INSTALL_BIN)" -f -o -C $(SCANSUNBIN) "${DESTDIR}$(prefix)/bin/$(SCANSUNBIN)";
++	"$(HLHDF_INSTALL_BIN)" -f -C $(SCANSUNBIN) "${DESTDIR}$(prefix)/bin/$(SCANSUNBIN)";
+ 
+ .PHONY=clean
+ clean:
+diff --git a/librave/toolbox/Makefile b/librave/toolbox/Makefile
+index 0ce99b6..1caa029 100644
+--- a/librave/toolbox/Makefile
++++ b/librave/toolbox/Makefile
+@@ -101,10 +101,10 @@ $(LIBRAVETOOLBOX): $(DEPDIR) $(RAVEOBJS)
+ 
+ .PHONY=install
+ install:
+-	@"$(HLHDF_INSTALL_BIN)" -f -o -C $(LIBRAVETOOLBOX) "${DESTDIR}$(prefix)/lib/$(LIBRAVETOOLBOX)"
++	@"$(HLHDF_INSTALL_BIN)" -f -C $(LIBRAVETOOLBOX) "${DESTDIR}$(prefix)/lib/$(LIBRAVETOOLBOX)"
+ 	@for i in $(INSTALL_HEADERS) ; \
+ 	do \
+-		"$(HLHDF_INSTALL_BIN)" -f -o -m644 -C $$i "${DESTDIR}$(prefix)/include/$$i"; \
++		"$(HLHDF_INSTALL_BIN)" -f -m644 -C $$i "${DESTDIR}$(prefix)/include/$$i"; \
+ 	done
+ 
+ .PHONY=clean
