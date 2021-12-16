@@ -70,7 +70,7 @@ hdf5_include_dir()
   if [ "$OS_NAME" = "Ubuntu" ]; then
     echo "/usr/include/hdf5/serial"
   else
-    X=`locate hdf5.h  | head -h | sed -e "s/\/hdf5.h//g"`
+    X=`locate hdf5.h  | head -1 | sed -e "s/\/hdf5.h//g"`
     echo "$X"
   fi
 }
@@ -97,7 +97,9 @@ rave_config_param()
   OS_NAME=`get_os_name`
   RAVE_CONFIG_PARAMS=""
   if [ "$OS_NAME" = "Ubuntu" ]; then
-    RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=/opt/vol2bird"
+    RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
+  elif [ "$OS_NAME" = "CentOS" ]; then
+    RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
   else
     echo "Not a prededfined OS, using best effort to identify rave config parameters"
     echo ""
@@ -110,6 +112,8 @@ rsl_cflags()
   OS_VARIANT=`get_os_version`
   if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     echo "-I"`dpkg-query -L libtirpc-dev | grep "rpc/rpc.h" | sed -e "s/rpc\/rpc.h//g"`
+  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
+    echo "-I/usr/include/tirpc"
   fi
   echo ""
 }
@@ -119,6 +123,8 @@ rsl_ldflags()
   OS_VARIANT=`get_os_version`
   if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     echo "-L"`dpkg-query -L libtirpc-dev | egrep -e 'libtirpc.so$' | sed -e "s/\/libtirpc.so//g"`
+  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
+    echo "-ltirpc"
   fi
   echo ""
 }
@@ -135,11 +141,29 @@ vol2bird_config_param()
     CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
     CONFUSELIB=`dpkg-query -L libconfuse-dev | grep libconfuse.so | sed -e "s/\/libconfuse.so//g"`
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
-  elif [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" != "Ubuntu-21.10" ]; then
+  elif [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     GSLINC=`dpkg-query -L libgsl-dev | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g"`
     GSLLIB=`dpkg-query -L libgsl-dev | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g"`
     CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
     CONFUSELIB=`dpkg-query -L libconfuse-dev | grep libconfuse.so | sed -e "s/\/libconfuse.so//g"`
+    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
+    GSLINC=`locate gsl/gsl_vector.h 2>/dev/null | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
+    if [ "$GSLINC" = "" ]; then
+      GSLINC=`repoquery -q -l gsl-devel | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
+    fi
+    GSLLIB=`locate libgsl.so 2>/dev/null | egrep -e 'libgsl.so$' | sed -e "s/\/libgsl.so//g" | tail -1`
+    if [ "$GSLLIB" = "" ]; then
+      GSLLIB=`repoquery -q -l gsl-devel | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g" | tail -1`
+    fi
+    CONFUSEINC=`locate confuse.h | egrep -e 'confuse.h$' | sed -e "s/\/confuse.h//g" | tail -1`
+    if [ "$CONFUSEINC" = "" ]; then
+      CONFUSEINC=`repoquery -q -l libconfuse-devel | grep confuse.h | sed -e "s/\/confuse.h//g" | tail -1`
+    fi
+    CONFUSELIB=`locate libconfuse.so | egrep -e 'libconfuse.so$'  | sed -e "s/\/libconfuse.so//g" | tail -1`
+    if [ "$CONFUSELIB" = "" ]; then
+      CONFUSELIB=`repoquery -q -l libconfuse-devel | grep libconfuse.so | sed -e "s/\/libconfuse.so//g" | tail -1`
+    fi
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
   else
     echo "Not a prededfined OS, using best effort to identify vol2bird config parameters"
@@ -155,7 +179,9 @@ get_vol2bird_configure_LIBS()
   
   if [ "$OS_VARIANT" = "Ubuntu-18.04" -o "$OS_VARIANT" = "Ubuntu-18.10" ]; then
     VOL2BIRD_configure_LIBS=
-  elif [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" != "Ubuntu-21.10" ]; then
+  elif [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+    VOL2BIRD_configure_LIBS=-ltirpc
+  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
   else
     VOL2BIRD_configure_LIBS=
@@ -267,6 +293,9 @@ install_rave()
   RAVE_CONFIG_PARAM=`rave_config_param $PREFIX`
 
   echo "Using $RAVE_CONFIG_PARAM to configure rave"
+
+  echo "PREFIX=$PREFIX"
+  echo "CONFIG: $RAVE_CONFIG_PARAM"
 
   ./configure --prefix="$PREFIX/rave" --without-python $RAVE_CONFIG_PARAM
   make         || exit_with_error 127 "(RAVE) Failed to compile software"
@@ -384,7 +413,7 @@ install_libtorch()
 
   cd "$DOWNLOADS"
 
-  if [ "$OS_NAME" = "Ubuntu" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" ]; then
      if [ ! -f "libtorch-shared-with-deps-1.7.1+cpu.zip" ]; then
        wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.7.1%2Bcpu.zip || exit_with_error 127 "Failed to fetch libtorch dependency"
      fi
@@ -407,7 +436,7 @@ install_vol2bird()
   BUILDDIR=$2
   PREFIX=$3
   PATCHDIR=$4
-
+  OS_VARIANT=`get_os_version`
   BUILD_LOG="$BUILDDIR/.built_packages"
   CURRDIR=`pwd`
 
@@ -428,14 +457,17 @@ install_vol2bird()
   cd "$BUILDDIR/vol2bird"
   
   patch -p1 < "$PATCHDIR/vol2bird.patch"
+ 
+  if  [ "$OS_VARIANT" = "CentOS-8" ]; then
+    autoconf || exit_with_error 127 "(VOL2BIRD) Could not recreate configure file"
+  fi
 
   VOL2BIRD_CONFIG_PARAM=`vol2bird_config_param $PREFIX`
 
   echo "VOL2BIRD PARAM: $VOL2BIRD_CONFIG_PARAM"
 
   echo "Using $VOL2BIRD_CONFIG_PARAM to configure vol2bird"
-
-  CPPFLAGS=-I`hdf5_include_dir` CFLAGS=-I`hdf5_include_dir` LIBS=`get_vol2bird_configure_LIBS` ./configure --prefix="$PREFIX/vol2bird" $VOL2BIRD_CONFIG_PARAM
+  CPPFLAGS=-I`hdf5_include_dir` CFLAGS=-I`hdf5_include_dir` LIBS=`get_vol2bird_configure_LIBS` ./configure --prefix="$PREFIX/vol2bird" $VOL2BIRD_CONFIG_PARAM || exit_with_error 127 "(VOL2BIRD) Failed to configure software"
   make         || exit_with_error 127 "(VOL2BIRD) Failed to compile software"
   make install || exit_with_error 127 "(VOL2BIRD) Failed to install software"
 
