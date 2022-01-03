@@ -39,7 +39,7 @@ fi
 sudo yum update -y || exit_with_error 127 "Could not update apt"
 sudo dnf -y install dnf-plugins-core || exit_with_error 127 "Could not install dnf plugins core"
 
-if [ "$OS_VARIANT" = "CentOS-8" -a "$OS_VARIANT" = "CentOS-7" ]; then
+if [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "CentOS-7" ]; then
   sudo yum install -y epel-release || exit_with_error 127 "Could not install epel-release"
   sudo dnf config-manager --set-enabled powertools || exit_with_error 127 "Could not enable powertools"
 elif [ "$OS_VARIANT" = "RedHat-7" ]; then
