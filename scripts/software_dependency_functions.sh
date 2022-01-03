@@ -110,7 +110,7 @@ rave_config_param()
 rsl_cflags()
 {
   OS_VARIANT=`get_os_version`
-  if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     echo "-I"`dpkg-query -L libtirpc-dev | grep "rpc/rpc.h" | sed -e "s/rpc\/rpc.h//g"`
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "-I/usr/include/tirpc"
@@ -121,7 +121,7 @@ rsl_cflags()
 rsl_ldflags()
 {
   OS_VARIANT=`get_os_version`
-  if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     echo "-L"`dpkg-query -L libtirpc-dev | egrep -e 'libtirpc.so$' | sed -e "s/\/libtirpc.so//g"`
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "-ltirpc"
