@@ -370,7 +370,7 @@ install_rsl()
 
   cd "$BUILDDIR/rsl" || exit_with_error 127 "(IRIS2ODIM) Could not change to folder $BUILDDIR/rsl"
 
-  if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     patch -p1 < "$PATCHDIR/rsl_tirpc.patch" || exit_with_error 127 "(RSL) Failed to patch system"
   fi
   
