@@ -64,7 +64,7 @@ do_install()
 {
   prefix=$1
   echo "OS_NAME=$OS_NAME"
-  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     sh "$SCRIPTPATH/scripts/install_debian_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
   elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
     sh "$SCRIPTPATH/scripts/install_redhat_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
