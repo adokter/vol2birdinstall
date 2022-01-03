@@ -65,9 +65,9 @@ do_install()
   prefix=$1
   echo "OS_NAME=$OS_NAME"
   if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian" ]; then
-    sh "$SCRIPTPATH/scripts/install_debian_dependencies.sh" $*
+    sh "$SCRIPTPATH/scripts/install_debian_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
   elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
-    sh "$SCRIPTPATH/scripts/install_redhat_dependencies.sh" $*
+    sh "$SCRIPTPATH/scripts/install_redhat_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
   fi
 
   mkdir -p "$BUILDDIR" || exit_with_error 127 "Could not create build directory $BUILDDIR"
@@ -78,7 +78,7 @@ do_install()
 
   sudo chown $USER "$prefix"
 
-  install_proj4 "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+  install_proj4 "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR" || exit_with_error 127 "Could not build proj4"
 
   install_hlhdf "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
 

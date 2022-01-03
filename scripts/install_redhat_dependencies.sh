@@ -38,8 +38,16 @@ fi
 #
 sudo yum update -y || exit_with_error 127 "Could not update apt"
 sudo dnf -y install dnf-plugins-core || exit_with_error 127 "Could not install dnf plugins core"
-sudo yum install -y epel-release || exit_with_error 127 "Could not install epel-release"
-sudo dnf config-manager --set-enabled powertools || exit_with_error 127 "Could not enable powertools"
+
+if [ "$OS_VARIANT" = "CentOS-8" -a "$OS_VARIANT" = "CentOS-7" ]; then
+  sudo yum install -y epel-release || exit_with_error 127 "Could not install epel-release"
+  sudo dnf config-manager --set-enabled powertools || exit_with_error 127 "Could not enable powertools"
+elif [ "$OS_VARIANT" = "RedHat-7" ]; then
+  sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y || exit_with_error 127 "Could not enable latest epel release"
+elif [ "$OS_VARIANT" = "RedHat-8" ]; then
+  sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm -y || exit_with_error 127 "Could not enable latest epel release"
+fi
+sudo yum install -y patch || exit_with_error 127 "Could not install patch"
 sudo yum install -y python3 python3-devel || exit_with_error 127 "Could not install python"
 sudo yum install -y git bzip2-devel || exit_with_error 127 "Could not install dependencies"
 sudo yum install -y libconfuse-devel hdf5-devel gcc gcc-c++ wget unzip make cmake zlib zlib-devel flex file || exit_with_error 127 "Could not install dependencies"

@@ -69,6 +69,8 @@ hdf5_include_dir()
   OS_NAME=`get_os_name`
   if [ "$OS_NAME" = "Ubuntu" ]; then
     echo "/usr/include/hdf5/serial"
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
+    echo "/usr/include"
   else
     X=`locate hdf5.h  | head -1 | sed -e "s/\/hdf5.h//g"`
     echo "$X"
@@ -84,8 +86,7 @@ hlhdf_config_param()
   if [ "$OS_NAME" = "Ubuntu" ]; then
     HLHDF_CONFIG_PARAMS="--with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial --with-zlib=/usr/include,/usr/lib/x86_64-linux-gnu"
   else
-    echo "Not a prededfined OS, using best effort to identify hlhdf config parameters"
-    echo ""
+    echo "Not a prededfined OS, using best effort to identify hlhdf config parameters" >&2
   fi
   echo "--without-python $HLHDF_CONFIG_PARAMS"
 }
@@ -98,11 +99,10 @@ rave_config_param()
   RAVE_CONFIG_PARAMS=""
   if [ "$OS_NAME" = "Ubuntu" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
-  elif [ "$OS_NAME" = "CentOS" ]; then
+  elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
   else
-    echo "Not a prededfined OS, using best effort to identify rave config parameters"
-    echo ""
+    echo "Not a prededfined OS, using best effort to identify rave config parameters" >&2
   fi
   echo "$RAVE_CONFIG_PARAMS"
 }
@@ -112,7 +112,7 @@ rsl_cflags()
   OS_VARIANT=`get_os_version`
   if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     echo "-I"`dpkg-query -L libtirpc-dev | grep "rpc/rpc.h" | sed -e "s/rpc\/rpc.h//g"`
-  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "-I/usr/include/tirpc"
   fi
   echo ""
@@ -123,7 +123,7 @@ rsl_ldflags()
   OS_VARIANT=`get_os_version`
   if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     echo "-L"`dpkg-query -L libtirpc-dev | egrep -e 'libtirpc.so$' | sed -e "s/\/libtirpc.so//g"`
-  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "-ltirpc"
   fi
   echo ""
@@ -147,7 +147,7 @@ vol2bird_config_param()
     CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
     CONFUSELIB=`dpkg-query -L libconfuse-dev | grep libconfuse.so | sed -e "s/\/libconfuse.so//g"`
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
-  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
     GSLINC=`locate gsl/gsl_vector.h 2>/dev/null | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
     if [ "$GSLINC" = "" ]; then
       GSLINC=`repoquery -q -l gsl-devel | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
@@ -166,7 +166,7 @@ vol2bird_config_param()
     fi
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
   else
-    echo "Not a prededfined OS, using best effort to identify vol2bird config parameters"
+    echo "Not a prededfined OS, using best effort to identify vol2bird config parameters" >&2
     GSLROOT=`locate "gsl/gsl_vector.h" | head -1 | sed -e "s/\/gsl\/gsl_vector.h//g"`
   fi
   echo "$VOL2BIRD_CONFIG_PARAMS"
@@ -181,7 +181,7 @@ get_vol2bird_configure_LIBS()
     VOL2BIRD_configure_LIBS=
   elif [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
-  elif [ "$OS_VARIANT" = "CentOS-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
   else
     VOL2BIRD_configure_LIBS=
@@ -207,19 +207,19 @@ install_proj4()
   is_installed_version "$BUILD_LOG" PROJ4 "$EXPECTED_PROJ4_VERSION" && echo "skipping" && return 0
 
   if [ ! -f "$DOWNLOADS/$TARBALL" ]; then
-    wget "$PROJ4_SOURCE_CODE" -O- > "$DOWNLOADS/$TARBALL"
+    wget "$PROJ4_SOURCE_CODE" -O- > "$DOWNLOADS/$TARBALL" || exit_with_error 127 "Could not fetch PROJ.4 tarball"
   fi
 
   CURRDIR=`pwd`
   
-  cd $BUILDDIR
+  cd $BUILDDIR || exit_with_error 127 "(PROJ.4) Could not change to folder $BUILDDIR"
   tar -xvzf "$DOWNLOADS/$TARBALL"
-  cd `echo $TARBALL | sed -e "s/\.tar\.gz//g"`
+  cd `echo $TARBALL | sed -e "s/\.tar\.gz//g"` || exit_with_error 127 "(PROJ.4) Could not change to proj folder"
   ./configure --prefix="$PREFIX" --without-jni || exit_with_error 127 "(PROJ.4) Could not configure"
   make                                         || exit_with_error 127 "(PROJ.4) Could not make"
   make install                                 || exit_with_error 127 "(PROJ.4) Could not install"
 
-  cd $CURRDIR
+  cd $CURRDIR || exit_with_error 127 "(PROJ.4) Could not change back to folder $CURRDIR"
 
   add_installed_version "$BUILD_LOG" PROJ4 "$EXPECTED_PROJ4_VERSION"
 }
@@ -237,27 +237,27 @@ install_hlhdf()
 
   is_installed_version "$BUILD_LOG" HLHDF "$HLHDF_VERSION" && echo "skipping" && return 0
 
-  cd "$DOWNLOADS"
+  cd "$DOWNLOADS" || exit_with_error 127 "(HOLHDF) Could not change to download directory $DOWNLOADS"
   
   NVER=`fetch_git_software HLHDF "$HLHDF_SOURCE_CODE" hlhdf "$HLHDF_VERSION"` || exit_with_error 127 "(HLHDF) Failed to update software"
   echo "HLHDF is at version: $NVER"
 
   \rm -fr "$BUILDIR/hlhdf" || exit_with_error 127 "(HLHDF) Could not remove build folder"
   
-  cp -r hlhdf "$BUILDDIR/"
-  \rm -fr "$BUILDDIR/hlhdf/.git"
+  cp -r hlhdf "$BUILDDIR/" || exit_with_error 127 "(HOLHDF) Could not copy source to build dir"
+  \rm -fr "$BUILDDIR/hlhdf/.git" || exit_with_error 127 "(HOLHDF) Could not remove unused git info"
 
-  cd "$BUILDDIR/hlhdf"
+  cd "$BUILDDIR/hlhdf" || exit_with_error 127 "(HOLHDF) Could not change directory to $BUILDDIR/hlhdf"
 
   HLHDF_CONFIG_PARAM=`hlhdf_config_param $PREFIX`
 
   echo "Using $HLHDF_CONFIG_PARAM to configure hlhdf"
 
-  ./configure --prefix="$PREFIX/hlhdf" $HLHDF_CONFIG_PARAM
+  ./configure --prefix="$PREFIX/hlhdf" $HLHDF_CONFIG_PARAM || exit_with_error 127 "(HOLHDF) Could not configure HLHDF"
   make         || exit_with_error 127 "(HLHDF) Failed to compile software"
   make install || exit_with_error 127 "(HLHDF) Failed to install software"
   
-  cd "$CURRDIR"
+  cd "$CURRDIR" || exit_with_error 127 "(HOLHDF) Could not change directory back to $CURRDIR"
 
   add_installed_version "$BUILD_LOG" HLHDF "$HLHDF_VERSION"
 }
@@ -276,32 +276,29 @@ install_rave()
 
   is_installed_version "$BUILD_LOG" RAVE "$RAVE_VERSION" && echo "skipping" && return 0
 
-  cd "$DOWNLOADS"
+  cd "$DOWNLOADS" || exit_with_error 127 "(RAVE) Could not change to download directory $DOWNLOADS"
   
   NVER=`fetch_git_software RAVE "$RAVE_SOURCE_CODE" rave "$RAVE_VERSION"` || exit_with_error 127 "(RAVE) Failed to update software"
   echo "RAVE is at version: $NVER"
 
   \rm -fr "$BUILDIR/rave" || exit_with_error 127 "(RAVE) Could not remove build folder"
   
-  cp -r rave "$BUILDDIR/"
-  \rm -fr "$BUILDDIR/rave/.git"
+  cp -r rave "$BUILDDIR/" || exit_with_error 127 "(RAVE) Could not copy source to build dir"
+  \rm -fr "$BUILDDIR/rave/.git" || exit_with_error 127 "(RAVE) Could not remove unused git info"
   
-  cd "$BUILDDIR/rave"
+  cd "$BUILDDIR/rave" || exit_with_error 127 "(RAVE) Could not change to folder $BUILDDIR/rave"
   
-  patch -p1 < "$PATCHDIR/rave.patch"
+  patch -p1 < "$PATCHDIR/rave.patch" || exit_with_error 127 "(RAVE) Could not patch system for building"
 
   RAVE_CONFIG_PARAM=`rave_config_param $PREFIX`
 
   echo "Using $RAVE_CONFIG_PARAM to configure rave"
 
-  echo "PREFIX=$PREFIX"
-  echo "CONFIG: $RAVE_CONFIG_PARAM"
-
-  ./configure --prefix="$PREFIX/rave" --without-python $RAVE_CONFIG_PARAM
+  ./configure --prefix="$PREFIX/rave" --without-python $RAVE_CONFIG_PARAM || exit_with_error 127 "(RAVE) Failed to configure system"
   make         || exit_with_error 127 "(RAVE) Failed to compile software"
   make install || exit_with_error 127 "(RAVE) Failed to install software"
   
-  cd "$CURRDIR"
+  cd "$CURRDIR" || exit_with_error 127 "(RAVE) Could not change back to folder $CURRDIR"
 
   add_installed_version "$BUILD_LOG" RAVE "$RAVE_VERSION"
 }
@@ -320,24 +317,24 @@ install_iris2odim()
 
   is_installed_version "$BUILD_LOG" IRIS2ODIM "$IRIS2ODIM_VERSION" && echo "skipping" && return 0
 
-  cd "$DOWNLOADS"
+  cd "$DOWNLOADS" || exit_with_error 127 "(IRIS2ODIM) Could not change to download directory $DOWNLOADS"
   
   NVER=`fetch_git_software IRIS2ODIM "$IRIS2ODIM_SOURCE_CODE" iris2odim "$IRIS2ODIM_VERSION"` || exit_with_error 127 "(IRIS2ODIM) Failed to update software"
   echo "IRIS2ODIM is at version: $NVER"
 
   \rm -fr "$BUILDIR/iris2odim" || exit_with_error 127 "(IRIS2ODIM) Could not remove build folder"
   
-  cp -r iris2odim "$BUILDDIR/"
-  \rm -fr "$BUILDDIR/iris2odim/.git"
+  cp -r iris2odim "$BUILDDIR/" || exit_with_error 127 "(IRIS2ODIM) Could not copy source to build dir"
+  \rm -fr "$BUILDDIR/iris2odim/.git" || exit_with_error 127 "(IRIS2ODIM) Could not remove unused git info"
   
-  cd "$BUILDDIR/iris2odim"
+  cd "$BUILDDIR/iris2odim" || exit_with_error 127 "(IRIS2ODIM) Could not change to folder $BUILDDIR/iris2odim"
   
-  patch -p1 < "$PATCHDIR/iris2odim.patch"
+  patch -p1 < "$PATCHDIR/iris2odim.patch" || exit_with_error 127 "(RAVE) Could not patch system for building"
 
   RAVEROOT=$PREFIX make         || exit_with_error 127 "(IRIS2ODIM) Failed to compile software"
   RAVEROOT=$PREFIX make install || exit_with_error 127 "(IRIS2ODIM) Failed to install software"
   
-  cd "$CURRDIR"
+  cd "$CURRDIR" || exit_with_error 127 "(IRIS2ODIM) Could not change back to folder $CURRDIR"
 
   add_installed_version "$BUILD_LOG" IRIS2ODIM "$IRIS2ODIM_VERSION"
 }
@@ -348,6 +345,7 @@ install_rsl()
   BUILDDIR=$2
   PREFIX=$3
   PATCHDIR=$4
+  OS_VARIANT=`get_os_version`
   
   BUILD_LOG="$BUILDDIR/.built_packages"
   CURRDIR=`pwd`
@@ -356,7 +354,7 @@ install_rsl()
 
   is_installed_version "$BUILD_LOG" RSL "$RSL_VERSION" && echo "skipping" && return 0
 
-  cd "$DOWNLOADS"
+  cd "$DOWNLOADS" || exit_with_error 127 "(RSL) Could not change to download directory $DOWNLOADS"
   
   NVER=`fetch_git_software RSL "$RSL_SOURCE_CODE" rsl "$RSL_VERSION"` || exit_with_error 127 "(RSL) Failed to update software"
   echo "RSL is at version: $NVER"
@@ -364,21 +362,20 @@ install_rsl()
   \rm -fr "$BUILDIR/rsl" || exit_with_error 127 "(RSL) Could not remove build folder"
   
   ## Imporant to preserve datetime (-p) when copying. Otherwise yacc will cause problems
-  cp -p -r rsl "$BUILDDIR/"
-  \rm -fr "$BUILDDIR/rsl/.git"
+  cp -p -r rsl "$BUILDDIR/" || exit_with_error 127 "(RSL) Could not copy source to build dir"
+  \rm -fr "$BUILDDIR/rsl/.git" || exit_with_error 127 "(RSL) Could not remove unused git info"
 
-  cd "$BUILDDIR/rsl"
+  cd "$BUILDDIR/rsl" || exit_with_error 127 "(IRIS2ODIM) Could not change to folder $BUILDDIR/rsl"
 
-  OS_VARIANT=`get_os_version`
   if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
-    patch -p1 < "$PATCHDIR/rsl_tirpc.patch" || exit_with_error 127 "Failed to patch rsl"
+    patch -p1 < "$PATCHDIR/rsl_tirpc.patch" || exit_with_error 127 "(RSL) Failed to patch system"
   fi
   
   RSL_CFLAGS=`rsl_cflags`
   RSL_LDFLAGS=`rsl_ldflags`
   
-  aclocal #2>&1 >> /dev/null
-  automake #2>&1 >> /dev/null
+  aclocal #2>&1 >> /dev/null || exit_with_error 127 "(RSL) Could not run aclocal"
+  automake #2>&1 >> /dev/null || exit_with_error 127 "(RSL) Could not run automake"
   
   if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     CFLAGS="$RSL_CFLAGS" LDFLAGS="$RSL_LDFLAGS" LIBS=-ltirpc ./configure --prefix="$PREFIX/rsl"
@@ -390,7 +387,7 @@ install_rsl()
     make AUTOCONF=: AUTOHEADER=: AUTOMAKE=: ACLOCAL=: install || exit_with_error 127 "(RSL) Failed to install software"
   fi
   
-  cd "$CURRDIR"
+  cd "$CURRDIR" || exit_with_error 127 "(RSL) Could not change back to folder $CURRDIR"
 
   add_installed_version "$BUILD_LOG" RSL "$RSL_VERSION"
 }
@@ -411,21 +408,21 @@ install_libtorch()
 
   is_installed_version "$BUILD_LOG" LIBTORCH "1.7.1" && echo "skipping" && return 0
 
-  cd "$DOWNLOADS"
+  cd "$DOWNLOADS" || exit_with_error 127 "(LIBTORCH) Could not change to download directory $DOWNLOADS"
 
-  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
      if [ ! -f "libtorch-shared-with-deps-1.7.1+cpu.zip" ]; then
-       wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.7.1%2Bcpu.zip || exit_with_error 127 "Failed to fetch libtorch dependency"
+       wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.7.1%2Bcpu.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
      fi
-     unzip -u libtorch-shared-with-deps-1.7.1+cpu.zip -d "${PREFIX}" || exit_with_error 127 "Failed to unzip libtorch"
+     unzip -u libtorch-shared-with-deps-1.7.1+cpu.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
   elif [ "$OS_NAME" = "MacOS" ]; then  
      if [ ! -f "libtorch-shared-with-deps-1.7.1+cpu.zip" ]; then
-       wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.7.1.zip || exit_with_error 127 "Failed to fetch libtorch dependency"
+       wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.7.1.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
      fi
-     unzip -u libtorch-macos-1.7.1.zip -d "${PREFIX}" || exit_with_error 127 "Failed to unzip libtorch"
+     unzip -u libtorch-macos-1.7.1.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
   fi
   
-  cd "$CURRDIR"
+  cd "$CURRDIR" || exit_with_error 127 "(LIBTORCH) Could not change back to folder $CURRDIR"
 
   add_installed_version "$BUILD_LOG" LIBTORCH "1.7.1"
 }
@@ -444,21 +441,21 @@ install_vol2bird()
 
   is_installed_version "$BUILD_LOG" VOL2BIRD "$VOL2BIRD_VERSION" && echo "skipping" && return 0
 
-  cd "$DOWNLOADS"
+  cd "$DOWNLOADS" || exit_with_error 127 "(LIBTORCH) Could not change to download directory $DOWNLOADS"
   
   NVER=`fetch_git_software VOL2BIRD "$VOL2BIRD_SOURCE_CODE" vol2bird "$VOL2BIRD_VERSION"` || exit_with_error 127 "(VOL2BIRD) Failed to update software"
   echo "VOL2BIRD is at version: $NVER"
 
   \rm -fr "$BUILDIR/vol2bird" || exit_with_error 127 "(VOL2BIRD) Could not remove build folder"
   
-  cp -r vol2bird "$BUILDDIR/"
-  \rm -fr "$BUILDDIR/vol2bird/.git"
+  cp -r vol2bird "$BUILDDIR/" || exit_with_error 127 "(VOL2BIRD) Could not copy source to build dir"
+  \rm -fr "$BUILDDIR/vol2bird/.git" || exit_with_error 127 "(VOL2BIRD) Could not remove unused git info"
   
-  cd "$BUILDDIR/vol2bird"
+  cd "$BUILDDIR/vol2bird" || exit_with_error 127 "(VOL2BIRD) Could not change to folder $BUILDDIR/vol2bird"
   
-  patch -p1 < "$PATCHDIR/vol2bird.patch"
+  patch -p1 < "$PATCHDIR/vol2bird.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch system for building"
  
-  if  [ "$OS_VARIANT" = "CentOS-8" ]; then
+  if  [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     autoconf || exit_with_error 127 "(VOL2BIRD) Could not recreate configure file"
   fi
 
@@ -467,20 +464,24 @@ install_vol2bird()
   echo "VOL2BIRD PARAM: $VOL2BIRD_CONFIG_PARAM"
 
   echo "Using $VOL2BIRD_CONFIG_PARAM to configure vol2bird"
+  echo "Using CPPFLAGS=-I`hdf5_include_dir` CFLAGS=-I`hdf5_include_dir` LIBS=`get_vol2bird_configure_LIBS`"
   CPPFLAGS=-I`hdf5_include_dir` CFLAGS=-I`hdf5_include_dir` LIBS=`get_vol2bird_configure_LIBS` ./configure --prefix="$PREFIX/vol2bird" $VOL2BIRD_CONFIG_PARAM || exit_with_error 127 "(VOL2BIRD) Failed to configure software"
   make         || exit_with_error 127 "(VOL2BIRD) Failed to compile software"
   make install || exit_with_error 127 "(VOL2BIRD) Failed to install software"
 
   LDPATH=`cat def.mk | grep LD_PRINTOUT | sed -e"s/LD_PRINTOUT=//" | xargs`
   
-  cd "$CURRDIR"
+  cd "$CURRDIR" || exit_with_error 127 "(VOL2BIRD) Could not change back to folder $CURRDIR"
   
   cat <<EOF > "$PREFIX/vol2bird/bin/vol2bird.sh"
 #!/bin/bash
 export LD_LIBRARY_PATH=$LDPATH
 $PREFIX/vol2bird/bin/vol2bird \$@
 EOF
-  chmod +x "$PREFIX/vol2bird/bin/vol2bird.sh"
+  if [ $? -ne 0 ]; then
+    exit_with_error 127 "(VOL2BIRD) Could not create start script"
+  fi
+  chmod +x "$PREFIX/vol2bird/bin/vol2bird.sh" || exit_with_error 127 "(VOL2BIRD) Could not change permissions on $PREFIX/vol2bird/bin/vol2bird.sh"
   echo "vol2bird.sh installed in $PREFIX/vol2bird/bin/vol2bird.sh"
   add_installed_version "$BUILD_LOG" VOL2BIRD "$VOL2BIRD_VERSION"
 }
