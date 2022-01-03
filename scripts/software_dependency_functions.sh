@@ -171,7 +171,7 @@ get_vol2bird_configure_LIBS()
   OS_VARIANT=`get_os_version`
   VOL2BIRD_configure_LIBS=
   
-  if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
