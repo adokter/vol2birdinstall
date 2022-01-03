@@ -30,6 +30,8 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 OS_VARIANT=`get_os_version`
 
 if [ "$OS_VARIANT" != "Ubuntu-18.04" -a "$OS_VARIANT" != "Ubuntu-18.10" \
+     -a "$OS_VARIANT" != "Ubuntu-19.04" -a "$OS_VARIANT" != "Ubuntu-19.10" \
+     -a "$OS_VARIANT" != "Ubuntu-20.04" -a "$OS_VARIANT" != "Ubuntu-20.10" \
      -a "$OS_VARIANT" != "Ubuntu-21.04" -a "$OS_VARIANT" != "Ubuntu-21.10" ]; then
   exit_with_error 127 "OS variant $OS_VARIANT not supported"
 fi
