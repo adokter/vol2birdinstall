@@ -28,8 +28,8 @@ get_os_name()
 {
   if [ -f /etc/os-release ]; then
     . /etc/os-release
-    OS=`echo $NAME | sed -e "s/Linux//g" | sed -e"s/^[[:space:]]*//g" | sed -e's/[[:space:]]*$//g'`
-    if [ "$OS" = "Red Hat Enterprise" ]; then
+    OS=`echo $NAME | sed -e"s/^[[:space:]]*//g" | sed -e's/[[:space:]]*$//g'`
+    if [ "$OS" = "Red Hat Enterprise Linux" ]; then
       OS=RedHat
     fi
   elif type lsb_release >/dev/null 2>&1; then
@@ -40,8 +40,8 @@ get_os_name()
   elif [ -f /etc/debian_version ]; then
     OS=Debian
   elif [ -f /etc/redhat-release ]; then
-    OS=`cat /etc/redhat-release | cut -d' ' -f1-3`
-    if [ "$OS" = "Red Hat Enterprise" ]; then
+    OS=`cat /etc/redhat-release
+    if [ "$OS" = "Red Hat Enterprise Linux" ]; then
       OS=RedHat
     fi
   else
@@ -54,8 +54,8 @@ get_os_version()
 {
   if [ -f /etc/os-release ]; then
     . /etc/os-release
-    OS=`echo $NAME | sed -e "s/Linux//g" | sed -e"s/^[[:space:]]*//g" | sed -e's/[[:space:]]*$//g'`
-    if [ "$OS" = "Red Hat Enterprise" ]; then
+    OS=`echo $NAME | sed -e"s/^[[:space:]]*//g" | sed -e's/[[:space:]]*$//g'`
+    if [ "$OS" = "Red Hat Enterprise Linux" ]; then
       OS=RedHat
       VER=`echo $VERSION_ID | cut -d '.' -f1`
     elif [ "$OS" = "CentOS" ]; then
@@ -74,8 +74,8 @@ get_os_version()
     OS=Debian
     VER=$(cat /etc/debian_version)
   elif [ -f /etc/redhat-release ]; then
-    OS=`cat /etc/redhat-release | cut -d' ' -f1-3`
-    if [ "$OS" = "Red Hat Enterprise" ]; then
+    OS=`cat /etc/redhat-release`
+    if [ "$OS" = "Red Hat Enterprise Linux" ]; then
       OS=RedHat
     fi    
     VER=`cat /etc/redhat-release | cut -d' ' -f4 | cut -d'.' -f1`
