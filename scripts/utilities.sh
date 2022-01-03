@@ -57,8 +57,12 @@ get_os_version()
     OS=`echo $NAME | sed -e "s/Linux//g" | sed -e"s/^[[:space:]]*//g" | sed -e's/[[:space:]]*$//g'`
     if [ "$OS" = "Red Hat Enterprise" ]; then
       OS=RedHat
-    fi    
-    VER=`echo $VERSION_ID | cut -d '.' -f1` 
+      VER=`echo $VERSION_ID | cut -d '.' -f1`
+    elif [ "$OS" = "CentOS" ]; then
+      VER=`echo $VERSION_ID | cut -d '.' -f1`
+    else
+      VER=`echo $VERSION_ID`  
+    fi
   elif type lsb_release >/dev/null 2>&1; then
     OS=$(lsb_release -si)
     VER=$(lsb_release -sr)
