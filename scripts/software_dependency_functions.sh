@@ -133,15 +133,10 @@ vol2bird_config_param()
 {
   PREFIX=$1
   OS_VARIANT=`get_os_version`
+  OS_NAME=`get_os_name`
   VOL2BIRD_CONFIG_PARAMS="--with-libtorch=$PREFIX/libtorch --with-rsl=$PREFIX/rsl --with-rave=$PREFIX/rave --with-iris=yes"
   
-  if [ "$OS_VARIANT" = "Ubuntu-18.04" -o "$OS_VARIANT" = "Ubuntu-18.10" ]; then
-    GSLINC=`dpkg-query -L libgsl-dev | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g"`
-    GSLLIB=`dpkg-query -L libgsl-dev | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g"`
-    CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
-    CONFUSELIB=`dpkg-query -L libconfuse-dev | grep libconfuse.so | sed -e "s/\/libconfuse.so//g"`
-    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
-  elif [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_NAME" = "Ubuntu" ]; then
     GSLINC=`dpkg-query -L libgsl-dev | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g"`
     GSLLIB=`dpkg-query -L libgsl-dev | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g"`
     CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
@@ -167,7 +162,6 @@ vol2bird_config_param()
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
   else
     echo "Not a prededfined OS, using best effort to identify vol2bird config parameters" >&2
-    GSLROOT=`locate "gsl/gsl_vector.h" | head -1 | sed -e "s/\/gsl\/gsl_vector.h//g"`
   fi
   echo "$VOL2BIRD_CONFIG_PARAMS"
 }
@@ -177,9 +171,7 @@ get_vol2bird_configure_LIBS()
   OS_VARIANT=`get_os_version`
   VOL2BIRD_configure_LIBS=
   
-  if [ "$OS_VARIANT" = "Ubuntu-18.04" -o "$OS_VARIANT" = "Ubuntu-18.10" ]; then
-    VOL2BIRD_configure_LIBS=
-  elif [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
