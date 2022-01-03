@@ -129,6 +129,17 @@ rsl_ldflags()
   echo ""
 }
 
+rsl_libs()
+{
+  OS_VARIANT=`get_os_version`
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+    echo "-ltirpc"
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
+    echo "-ltirpc"
+  fi
+  echo ""
+}
+
 vol2bird_config_param()
 {
   PREFIX=$1
@@ -365,16 +376,17 @@ install_rsl()
   
   RSL_CFLAGS=`rsl_cflags`
   RSL_LDFLAGS=`rsl_ldflags`
+  RSL_LIBS=`rsl_libs`
   
   aclocal #2>&1 >> /dev/null || exit_with_error 127 "(RSL) Could not run aclocal"
   automake #2>&1 >> /dev/null || exit_with_error 127 "(RSL) Could not run automake"
   
-  if [ "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
-    CFLAGS="$RSL_CFLAGS" LDFLAGS="$RSL_LDFLAGS" LIBS=-ltirpc ./configure --prefix="$PREFIX/rsl"
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+    CFLAGS="$RSL_CFLAGS" LDFLAGS="$RSL_LDFLAGS" LIBS="$RSL_LIBS" ./configure --prefix="$PREFIX/rsl"
     make AUTOCONF=: AUTOHEADER=: AUTOMAKE=: ACLOCAL=:         || exit_with_error 127 "(RSL) Failed to compile software"
     make AUTOCONF=: AUTOHEADER=: AUTOMAKE=: ACLOCAL=: install || exit_with_error 127 "(RSL) Failed to install software"
   else
-    CFLAGS="$RSL_CFLAGS" LDFLAGS="$RSL_LDFLAGS" ./configure --prefix="$PREFIX/rsl"  || exit_with_error 127 "(RSL) Failed to configure rsl"
+    CFLAGS="$RSL_CFLAGS" LDFLAGS="$RSL_LDFLAGS" LIBS="$RSL_LIBS" ./configure --prefix="$PREFIX/rsl"  || exit_with_error 127 "(RSL) Failed to configure rsl"
     make AUTOCONF=: AUTOHEADER=: AUTOMAKE=: ACLOCAL=:         || exit_with_error 127 "(RSL) Failed to compile software"
     make AUTOCONF=: AUTOHEADER=: AUTOMAKE=: ACLOCAL=: install || exit_with_error 127 "(RSL) Failed to install software"
   fi
