@@ -40,7 +40,7 @@ get_os_name()
   elif [ -f /etc/debian_version ]; then
     OS=Debian
   elif [ -f /etc/redhat-release ]; then
-    OS=`cat /etc/redhat-release
+    OS=`cat /etc/redhat-release`
     if [ "$OS" = "Red Hat Enterprise Linux" ]; then
       OS=RedHat
     fi
