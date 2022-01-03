@@ -39,7 +39,7 @@ fi
 #
 sudo apt-get update -y || exit_with_error 127 "Could not update apt"
 sudo apt-get install --no-install-recommends -y git libbz2-dev || exit_with_error 127 "Could not install dependencies"
-sudo apt-get install --no-install-recommends -y libconfuse-dev libhdf5-dev gcc g++ wget unzip make cmake zlib1g-dev flex-old file automake || exit_with_error 127 "Could not install dependencies"
+sudo apt-get install --no-install-recommends -y libconfuse-dev libhdf5-dev gcc g++ wget unzip make cmake zlib1g-dev flex-old file automake libtool || exit_with_error 127 "Could not install dependencies"
 sudo apt-get install --no-install-recommends -y gsl-bin libgsl-dev || exit_with_error 127 "Could not install dependencies"
 
 if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
