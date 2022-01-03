@@ -83,7 +83,7 @@ hlhdf_config_param()
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`
   HLHDF_CONFIG_PARAMS=""
-  if [ "$OS_NAME" = "Ubuntu" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     HLHDF_CONFIG_PARAMS="--with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial --with-zlib=/usr/include,/usr/lib/x86_64-linux-gnu"
   else
     echo "Not a prededfined OS, using best effort to identify hlhdf config parameters" >&2
@@ -97,7 +97,7 @@ rave_config_param()
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`
   RAVE_CONFIG_PARAMS=""
-  if [ "$OS_NAME" = "Ubuntu" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
   elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
@@ -110,7 +110,8 @@ rave_config_param()
 rsl_cflags()
 {
   OS_VARIANT=`get_os_version`
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  OS_NAME=`get_os_name`
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-I"`dpkg-query -L libtirpc-dev | grep "rpc/rpc.h" | sed -e "s/rpc\/rpc.h//g"`
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "-I/usr/include/tirpc"
@@ -121,7 +122,8 @@ rsl_cflags()
 rsl_ldflags()
 {
   OS_VARIANT=`get_os_version`
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  OS_NAME=`get_os_name`  
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10"-o "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-L"`dpkg-query -L libtirpc-dev | egrep -e 'libtirpc.so$' | sed -e "s/\/libtirpc.so//g"`
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "-ltirpc"
@@ -132,7 +134,8 @@ rsl_ldflags()
 rsl_libs()
 {
   OS_VARIANT=`get_os_version`
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  OS_NAME=`get_os_name`  
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-ltirpc"
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "-ltirpc"
@@ -147,7 +150,7 @@ vol2bird_config_param()
   OS_NAME=`get_os_name`
   VOL2BIRD_CONFIG_PARAMS="--with-libtorch=$PREFIX/libtorch --with-rsl=$PREFIX/rsl --with-rave=$PREFIX/rave --with-iris=yes"
   
-  if [ "$OS_NAME" = "Ubuntu" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     GSLINC=`dpkg-query -L libgsl-dev | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g"`
     GSLLIB=`dpkg-query -L libgsl-dev | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g"`
     CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
@@ -180,9 +183,10 @@ vol2bird_config_param()
 get_vol2bird_configure_LIBS()
 {
   OS_VARIANT=`get_os_version`
+  OS_NAME=`get_os_name`  
   VOL2BIRD_configure_LIBS=
   
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
@@ -349,7 +353,8 @@ install_rsl()
   PREFIX=$3
   PATCHDIR=$4
   OS_VARIANT=`get_os_version`
-  
+  OS_NAME=`get_os_name`
+    
   BUILD_LOG="$BUILDDIR/.built_packages"
   CURRDIR=`pwd`
   
@@ -370,7 +375,7 @@ install_rsl()
 
   cd "$BUILDDIR/rsl" || exit_with_error 127 "(IRIS2ODIM) Could not change to folder $BUILDDIR/rsl"
 
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     patch -p1 < "$PATCHDIR/rsl_tirpc.patch" || exit_with_error 127 "(RSL) Failed to patch system"
   fi
   
@@ -381,7 +386,7 @@ install_rsl()
   aclocal #2>&1 >> /dev/null || exit_with_error 127 "(RSL) Could not run aclocal"
   automake #2>&1 >> /dev/null || exit_with_error 127 "(RSL) Could not run automake"
   
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     CFLAGS="$RSL_CFLAGS" LDFLAGS="$RSL_LDFLAGS" LIBS="$RSL_LIBS" ./configure --prefix="$PREFIX/rsl"
     make AUTOCONF=: AUTOHEADER=: AUTOMAKE=: ACLOCAL=:         || exit_with_error 127 "(RSL) Failed to compile software"
     make AUTOCONF=: AUTOHEADER=: AUTOMAKE=: ACLOCAL=: install || exit_with_error 127 "(RSL) Failed to install software"
@@ -414,7 +419,7 @@ install_libtorch()
 
   cd "$DOWNLOADS" || exit_with_error 127 "(LIBTORCH) Could not change to download directory $DOWNLOADS"
 
-  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
      if [ ! -f "libtorch-shared-with-deps-1.7.1+cpu.zip" ]; then
        wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.7.1%2Bcpu.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
      fi
