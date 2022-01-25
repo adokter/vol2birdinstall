@@ -26,10 +26,10 @@
 PROJ4_SOURCE_CODE=https://download.osgeo.org/proj/proj-4.9.3.tar.gz
 
 HLHDF_SOURCE_CODE=https://github.com/baltrad/hlhdf.git
-HLHDF_VERSION=hlhdf-build-4
+HLHDF_VERSION=hlhdf-build-9
 
 RAVE_SOURCE_CODE=https://github.com/baltrad/rave.git
-RAVE_VERSION=rave-build-10
+RAVE_VERSION=rave-build-25
 
 IRIS2ODIM_SOURCE_CODE=https://github.com/adokter/iris2odim.git
 IRIS2ODIM_VERSION=376ae90cf93baafe225e4d394f634fd178e9a238
@@ -67,10 +67,21 @@ remove_built_module()
 hdf5_include_dir()
 {
   OS_NAME=`get_os_name`
+  OS_VARIANT=`get_os_version`
   if [ "$OS_NAME" = "Ubuntu" ]; then
     echo "/usr/include/hdf5/serial"
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     echo "/usr/include"
+  elif [ "$OS_NAME" = "Darwin" ]; then
+    if [ -f "/usr/local/opt/hdf5@1.10/include/hdf5.h" ]; then
+      echo "/usr/local/opt/hdf5@1.10/include"
+    elif [ -f "/usr/local/include/hdf5.h" ]; then
+      echo "/usr/local/include"
+    elif [ -f "/opt/homebrew/opt/hdf5@1.10/include/hdf5.h" ]; then
+      echo "/opt/homebrew/opt/hdf5@1.10/include"
+    else
+      echo "/usr/local/include"
+    fi
   else
     X=`locate hdf5.h  | head -1 | sed -e "s/\/hdf5.h//g"`
     echo "$X"
@@ -85,6 +96,17 @@ hlhdf_config_param()
   HLHDF_CONFIG_PARAMS=""
   if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     HLHDF_CONFIG_PARAMS="--with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial --with-zlib=/usr/include,/usr/lib/x86_64-linux-gnu"
+  elif [ "$OS_NAME" = "Darwin" ]; then
+    SDKPATH=`xcrun --show-sdk-path` || exit_with_error 127 "Could not run xcrun --show-sdk-path"
+    if [ -f "/usr/local/opt/hdf5@1.10/lib/libhdf5.dylib" ]; then
+      HLHDF_CONFIG_PARAMS="--with-hdf5=/usr/local/opt/hdf5@1.10/include,/usr/local/opt/hdf5@1.10/lib --with-zlib=$SDKPATH/usr/include,$SDKPATH/usr/lib"
+    elif [ -f "/usr/local/lib/libhdf5.dylib" ]; then
+      HLHDF_CONFIG_PARAMS="--with-hdf5=/usr/local/include,/usr/local/lib --with-zlib=$SDKPATH/usr/include,$SDKPATH/usr/lib"
+    elif [ -f "/opt/homebrew/opt/hdf5@1.10/lib/libhdf5.dylib" ]; then
+      HLHDF_CONFIG_PARAMS="--with-hdf5=/opt/homebrew/opt/hdf5@1.10/include,/opt/homebrew/opt/hdf5@1.10/lib --with-zlib=$SDKPATH/usr/include,$SDKPATH/usr/lib"
+    else
+      HLHDF_CONFIG_PARAMS="--with-hdf5=yes --with-zlib=yes"
+    fi
   else
     echo "Not a prededfined OS, using best effort to identify hlhdf config parameters" >&2
   fi
@@ -101,6 +123,8 @@ rave_config_param()
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
   elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
+  elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
+    RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf  --with-proj=/opt/homebrew"
   else
     echo "Not a prededfined OS, using best effort to identify rave config parameters" >&2
   fi
@@ -174,6 +198,16 @@ vol2bird_config_param()
       CONFUSELIB=`repoquery -q -l libconfuse-devel | grep libconfuse.so | sed -e "s/\/libconfuse.so//g" | tail -1`
     fi
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+  elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
+    GSLINC=`brew ls --verbose gsl | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
+    GSLLIB=`brew ls --verbose gsl | egrep -e "libgsl.dylib$" | sed -e "s/\/libgsl.dylib//g" | tail -1`
+    CONFUSEINC=`brew ls --verbose confuse | grep confuse.h | sed -e "s/\/confuse.h//g" | tail -1`
+    CONFUSELIB=`brew ls --verbose confuse | egrep -e 'libconfuse.dylib$' | sed -e "s/\/libconfuse.dylib//g" | tail -1`
+    if [ "$(arch)" = "arm64" ]; then
+      VOL2BIRD_CONFIG_PARAMS="--with-rsl=$PREFIX/rsl --with-rave=$PREFIX/rave --with-iris=yes"
+    fi
+    
+    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
   else
     echo "Not a prededfined OS, using best effort to identify vol2bird config parameters" >&2
   fi
@@ -237,14 +271,15 @@ install_hlhdf()
   BUILDDIR=$2
   PREFIX=$3
   BUILD_LOG="$BUILDDIR/.built_packages"
-
+  OS_NAME=`get_os_name`
+  
   CURRDIR=`pwd`
   
-  echo -n "Installing HLHDF...."
+  echo "Installing HLHDF...."
 
   is_installed_version "$BUILD_LOG" HLHDF "$HLHDF_VERSION" && echo "skipping" && return 0
 
-  cd "$DOWNLOADS" || exit_with_error 127 "(HOLHDF) Could not change to download directory $DOWNLOADS"
+  cd "$DOWNLOADS" || exit_with_error 127 "(HLHDF) Could not change to download directory $DOWNLOADS"
   
   NVER=`fetch_git_software HLHDF "$HLHDF_SOURCE_CODE" hlhdf "$HLHDF_VERSION"` || exit_with_error 127 "(HLHDF) Failed to update software"
   echo "HLHDF is at version: $NVER"
@@ -256,6 +291,11 @@ install_hlhdf()
 
   cd "$BUILDDIR/hlhdf" || exit_with_error 127 "(HOLHDF) Could not change directory to $BUILDDIR/hlhdf"
 
+  make distclean || true
+  if [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
+    patch -p1 < "$PATCHDIR/hlhdf-mac-patch.patch" || exit_with_error 127 "(HLHDF) Could not patch system for building"
+  fi
+  
   HLHDF_CONFIG_PARAM=`hlhdf_config_param $PREFIX`
 
   echo "Using $HLHDF_CONFIG_PARAM to configure hlhdf"
@@ -295,7 +335,7 @@ install_rave()
   
   cd "$BUILDDIR/rave" || exit_with_error 127 "(RAVE) Could not change to folder $BUILDDIR/rave"
   
-  patch -p1 < "$PATCHDIR/rave.patch" || exit_with_error 127 "(RAVE) Could not patch system for building"
+  #patch -p1 < "$PATCHDIR/rave.patch" || exit_with_error 127 "(RAVE) Could not patch system for building"
 
   RAVE_CONFIG_PARAM=`rave_config_param $PREFIX`
 
@@ -378,7 +418,8 @@ install_rsl()
   if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     patch -p1 < "$PATCHDIR/rsl_tirpc.patch" || exit_with_error 127 "(RSL) Failed to patch system"
   fi
-  
+  patch -p1 < "$PATCHDIR/rsl_fwd_declarations.patch" || exit_with_error 127 "(RSL) Failed to patch fwd declarations"
+    
   RSL_CFLAGS=`rsl_cflags`
   RSL_LDFLAGS=`rsl_ldflags`
   RSL_LIBS=`rsl_libs`
@@ -424,17 +465,22 @@ install_libtorch()
        wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.7.1%2Bcpu.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
      fi
      unzip -u libtorch-shared-with-deps-1.7.1+cpu.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
-  elif [ "$OS_NAME" = "MacOS" ]; then  
-     if [ ! -f "libtorch-shared-with-deps-1.7.1+cpu.zip" ]; then
-       wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.7.1.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
+  elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
+     if [ "$(arch)" != "arm64" ]; then
+       if [ ! -f "libtorch-macos-1.7.1.zip" ]; then
+         wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.7.1.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
+       fi
+       unzip -u libtorch-macos-1.7.1.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
      fi
-     unzip -u libtorch-macos-1.7.1.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
   fi
   
   cd "$CURRDIR" || exit_with_error 127 "(LIBTORCH) Could not change back to folder $CURRDIR"
 
   add_installed_version "$BUILD_LOG" LIBTORCH "1.7.1"
 }
+
+https://download.pytorch.org/libtorch/cpu/libtorch-macosx-arm64-1.7.1.zip
+#osx-arm64
 
 install_vol2bird()
 {
@@ -443,6 +489,7 @@ install_vol2bird()
   PREFIX=$3
   PATCHDIR=$4
   OS_VARIANT=`get_os_version`
+  OS_NAME=`get_os_name`
   BUILD_LOG="$BUILDDIR/.built_packages"
   CURRDIR=`pwd`
 
@@ -463,7 +510,8 @@ install_vol2bird()
   cd "$BUILDDIR/vol2bird" || exit_with_error 127 "(VOL2BIRD) Could not change to folder $BUILDDIR/vol2bird"
   
   patch -p1 < "$PATCHDIR/vol2bird.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch system for building"
- 
+  patch -p1 < "$PATCHDIR/vol2bird_defines.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch defines for building"
+  
   if  [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     autoconf || exit_with_error 127 "(VOL2BIRD) Could not recreate configure file"
   fi
@@ -482,9 +530,14 @@ install_vol2bird()
   
   cd "$CURRDIR" || exit_with_error 127 "(VOL2BIRD) Could not change back to folder $CURRDIR"
   
+  LL_PATH_NAME=LD_LIBRARY_PATH
+  if [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
+    LL_PATH_NAME=DYLD_LIBRARY_PATH
+  fi
+  
   cat <<EOF > "$PREFIX/vol2bird/bin/vol2bird.sh"
 #!/bin/bash
-export LD_LIBRARY_PATH=$LDPATH
+export $LL_PATH_NAME=$LDPATH
 $PREFIX/vol2bird/bin/vol2bird \$@
 EOF
   if [ $? -ne 0 ]; then

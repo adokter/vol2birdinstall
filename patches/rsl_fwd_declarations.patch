@@ -1,0 +1,97 @@
+diff --git a/examples/killer_sweep.c b/examples/killer_sweep.c
+index dba5f14..cb8e7ca 100644
+--- a/examples/killer_sweep.c
++++ b/examples/killer_sweep.c
+@@ -6,6 +6,10 @@
+ 
+ #include "rsl.h"
+ #include <stdlib.h>
++
++/* Exists in volume.c */
++int SWEEP_INDEX(Sweep *s);
++
+ void print_link_list(Azimuth_hash *list)
+ {
+   if (list == NULL) {
+diff --git a/examples/print_hash_table.c b/examples/print_hash_table.c
+index bfc12e4..3825fee 100644
+--- a/examples/print_hash_table.c
++++ b/examples/print_hash_table.c
+@@ -12,6 +12,9 @@
+ #include <stdlib.h>
+ #include "rsl.h"
+ 
++/* Exists in volume.c */
++int SWEEP_INDEX(Sweep *s);
++
+ void print_link_list(Azimuth_hash *list)
+ {
+   if (list == NULL) {
+diff --git a/examples/sector.c b/examples/sector.c
+index a152745..c3983ce 100644
+--- a/examples/sector.c
++++ b/examples/sector.c
+@@ -2,6 +2,9 @@
+ #include <stdlib.h>
+ #include "rsl.h"
+ 
++/* Exists in volume.c */
++int SWEEP_INDEX(Sweep *s);
++
+ /*
+  * Cannot compile if the hash table is static in volume.c.  For
+  * testing we make it globally known.
+diff --git a/mcgill.c b/mcgill.c
+index 20b830c..b4b894b 100644
+--- a/mcgill.c
++++ b/mcgill.c
+@@ -58,6 +58,11 @@
+ #define FALSE 0
+ #define EMPTY -1.0
+ 
++/* exists in endian.c */
++int little_endian(void);
++
++/* exists in endian.c */
++void swap_2_bytes(void *word);
+ 
+ /* Fixed elevation angles for Mcgill sweeps. */
+ static float elev_angle[3][24] = 
+diff --git a/rainbow_to_radar.c b/rainbow_to_radar.c
+index 7887063..52c5dbc 100644
+--- a/rainbow_to_radar.c
++++ b/rainbow_to_radar.c
+@@ -26,6 +26,10 @@
+ #include <string.h>
+ #include "rsl.h"
+ #include "rainbow.h"
++#include <unistd.h>
++
++/* Exists in rainbow.c but not in .h */
++void read_rainbow_header(Rainbow_hdr *rainbow_header, FILE *fp);
+ 
+ struct dms {
+     int deg;
+diff --git a/wsr88d_merge_split_cuts.c b/wsr88d_merge_split_cuts.c
+index 42ccf14..f47b0a6 100644
+--- a/wsr88d_merge_split_cuts.c
++++ b/wsr88d_merge_split_cuts.c
+@@ -1,4 +1,5 @@
+ #include <math.h>
++#include <strings.h>
+ #include "rsl.h"
+ 
+ static int merge_split_cuts = 1;
+diff --git a/wsr88d_to_radar.c b/wsr88d_to_radar.c
+index 7ee8e9d..4cedbcc 100644
+--- a/wsr88d_to_radar.c
++++ b/wsr88d_to_radar.c
+@@ -40,6 +40,8 @@ void free_and_clear_sweep(Wsr88d_sweep *wsr88d_sweep, int x, int n);
+  */
+ Volume *copy_sweeps_into_volume(Volume *new_volume, Volume *old_volume);
+ 
++/* Exists in file wsr88d_remove_sails_sweep.c */
++void wsr88d_remove_sails_sweep(Radar *radar);
+ 
+ Radar *wsr88d_load_m31_into_radar(Wsr88d_file *wf);
+ 

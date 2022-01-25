@@ -106,7 +106,9 @@ has_been_installed() {
     echo ""
     return 0
   fi
+  echo "X"
   VAR=`cat "$1" | egrep '^'"$2"'$'`
+  echo "Y"
   if [ "$VAR" != "" ]; then
     if [ "$3" != "" ]; then
       echo "$3"
@@ -129,7 +131,7 @@ installed_version() {
     echo ""
     return 0
   fi
-  VAR=`cat "$1" | egrep "MODULE=$2\b+"`
+  VAR=`cat "$1" | egrep "MODULE=$2[[:space:]]+"`
   if [ "$VAR" = "" ]; then
     # Verify old info
     VAR=`cat "$1" | egrep '^'"$2"'$'`
@@ -171,7 +173,7 @@ remove_installed() {
   if [ ! -f "$1" ]; then
     return
   fi
-  cat "$1" | egrep -v '^'"$2"'$' | egrep -v "^MODULE=$2\b+" > "$1.new"
+  cat "$1" | egrep -v '^'"$2"'$' | egrep -v "^MODULE=$2[[:space:]]+" > "$1.new"
   \mv "$1.new" "$1"
 }
 
