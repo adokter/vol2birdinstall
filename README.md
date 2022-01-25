@@ -48,4 +48,3 @@ After homebrew has been installed it will print some help text. One of the thing
 
 Follow these steps so that you have got the brew available when running the setup.
 
-
