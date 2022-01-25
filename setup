@@ -1,0 +1,167 @@
+#!/bin/sh
+###########################################################################
+# Copyright (C) 2021 HENJAB AB
+#
+# This file is part of vol2birdinstall.
+#
+# vol2birdinstall is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# vol2birdinstall is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with vol2birdinstall.  If not, see <http://www.gnu.org/licenses/>.
+###########################################################################
+#
+# Performs the installation steps for setting up the vol2bird software including dependencies
+#
+# @author Anders Henja (HENJAB AB)
+# @date 2021-09-26
+###########################################################################
+SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+DEFAULT_PREFIX=/opt/vol2bird
+
+ROOTDIR="$SCRIPTPATH"
+
+BUILDDIR="$ROOTDIR/.build"
+
+DOWNLOADDIR="$ROOTDIR/.downloads"
+
+PATCHDIR="$SCRIPTPATH/patches"
+
+CURRENTDIR=`pwd`
+
+. "$SCRIPTPATH/scripts/utilities.sh"
+
+. "$SCRIPTPATH/scripts/defaults.sh"
+
+. "$SCRIPTPATH/scripts/software_dependency_functions.sh"
+
+OS_NAME=`get_os_name`
+
+print_usage()
+{
+  echo "Usage: setup [options] (clean) (distclean) (install)"
+  echo "Actions:"
+  echo "clean     - Cleans the .build catalogue and all software will be rebuilt"
+  echo "distclean - Cleans the .downloads and .build catalogues and all software will be fetched and rebuilt"
+  echo "install   - Installs the software"
+  echo ""
+  echo "Options:"
+  echo "--prefix=<prefix>   Will install the software in the specified folder."
+  echo "--remove=<modules>  A comma separated list of modules that should be removed from build history"
+  echo "--history           Prints the currently built modules"
+  echo "--help              This help text"
+}
+
+do_install() 
+{
+  prefix=$1
+  echo "OS_NAME=$OS_NAME"
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
+    sh "$SCRIPTPATH/scripts/install_debian_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
+  elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
+    sh "$SCRIPTPATH/scripts/install_redhat_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
+  elif [ "$OS_NAME" = "Darwin" ]; then
+    echo "Skipping dependencies"
+    #sh "$SCRIPTPATH/scripts/install_macos_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
+  fi
+  
+  mkdir -p "$BUILDDIR" || exit_with_error 127 "Could not create build directory $BUILDDIR"
+
+  mkdir -p "$DOWNLOADDIR" || exit_with_error 127 "Could not create download directory $DOWNLOADDIR"
+
+  mkdir -p "$prefix" || exit_with_error 127 "Could not create prefix directory $prefix"
+
+  chown $USER "$prefix"
+
+  if [ "$OS_NAME" != "Darwin" ]; then
+    install_proj4 "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR" || exit_with_error 127 "Could not build proj4"
+  fi
+
+  install_hlhdf "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+
+  install_rave "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+
+  install_iris2odim "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+  
+  install_rsl "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+
+  install_libtorch "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+
+  install_vol2bird "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+}
+
+do_clean()
+{
+  \rm -fr "$BUILDDIR"
+}
+
+do_distclean()
+{
+  \rm -fr "$BUILDDIR"
+  \rm -fr "$DOWNLOADDIR"
+}
+
+DO_INSTALL=no
+DO_CLEAN=no
+DO_DISTCLEAN=no
+REMOVE_MODULE=
+
+PREFIX="$DEFAULT_PREFIX"
+
+for arg in $*; do
+  case $arg in
+    --prefix=*)
+      PREFIX=`echo $arg | sed 's/[-a-zA-Z0-9]*=//'`
+      ;;
+    --remove=*)
+      REMOVE_MODULE=`echo $arg | sed 's/[-a-zA-Z0-9]*=//'`
+      ;;
+    --history)
+      print_module_status "$BUILDDIR"
+      exit 0
+      ;;
+    --help)
+      print_usage $0
+      exit 0
+      ;;
+    install)
+      DO_INSTALL=yes
+      ;;
+    clean)
+      DO_CLEAN=yes
+      ;;
+    distclean)
+      DO_DISTCLEAN=yes
+      ;;
+    *)
+      ;;
+  esac
+done          
+
+if [ "$REMOVE_MODULE" != "" ]; then
+  MODULES=`echo $REMOVE_MODULE | tr ',' ' '`
+  for m in $MODULES; do
+    remove_built_module "$BUILDDIR/.built_packages" $m
+  done
+fi
+
+if [ "$DO_DISTCLEAN" = "yes" ]; then
+  do_distclean
+fi
+
+if [ "$DO_CLEAN" = "yes" ]; then
+  do_clean
+fi
+
+if [ "$DO_INSTALL" = "yes" ]; then
+  do_install "$PREFIX"
+fi
+

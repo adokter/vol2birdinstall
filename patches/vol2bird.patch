@@ -1,0 +1,317 @@
+diff --git a/Makefile b/Makefile
+index 4d85047..6fb8eec 100644
+--- a/Makefile
++++ b/Makefile
+@@ -33,15 +33,15 @@ build: def.mk
+ 	fi
+ 	$(MAKE) -C lib
+ 	$(MAKE) -C src
+-	$(MAKE) -C pyvol2bird
+-	$(MAKE) -C pgfplugin
++	#$(MAKE) -C pyvol2bird
++	#$(MAKE) -C pgfplugin
+ 
+ .PHONY:install
+ install: def.mk
+ 	$(MAKE) -C lib install
+ 	$(MAKE) -C src install
+-	$(MAKE) -C pyvol2bird install
+-	$(MAKE) -C pgfplugin install
++	#$(MAKE) -C pyvol2bird install
++	#$(MAKE) -C pgfplugin install
+ 	@if [ -f "./libmistnet/Makefile" ]; then \
+ 		$(MAKE) -C libmistnet install; \
+ 	fi
+diff --git a/configure b/configure
+index 4420a59..3f10ea4 100755
+--- a/configure
++++ b/configure
+@@ -688,6 +688,7 @@ infodir
+ docdir
+ oldincludedir
+ includedir
++runstatedir
+ localstatedir
+ sharedstatedir
+ sysconfdir
+@@ -765,6 +766,7 @@ datadir='${datarootdir}'
+ sysconfdir='${prefix}/etc'
+ sharedstatedir='${prefix}/com'
+ localstatedir='${prefix}/var'
++runstatedir='${localstatedir}/run'
+ includedir='${prefix}/include'
+ oldincludedir='/usr/include'
+ docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
+@@ -1017,6 +1019,15 @@ do
+   | -silent | --silent | --silen | --sile | --sil)
+     silent=yes ;;
+ 
++  -runstatedir | --runstatedir | --runstatedi | --runstated \
++  | --runstate | --runstat | --runsta | --runst | --runs \
++  | --run | --ru | --r)
++    ac_prev=runstatedir ;;
++  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
++  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
++  | --run=* | --ru=* | --r=*)
++    runstatedir=$ac_optarg ;;
++
+   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
+     ac_prev=sbindir ;;
+   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
+@@ -1154,7 +1165,7 @@ fi
+ for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
+ 		datadir sysconfdir sharedstatedir localstatedir includedir \
+ 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
+-		libdir localedir mandir
++		libdir localedir mandir runstatedir
+ do
+   eval ac_val=\$$ac_var
+   # Remove trailing slashes.
+@@ -1307,6 +1318,7 @@ Fine tuning of the installation directories:
+   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
+   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
+   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
++  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
+   --libdir=DIR            object code libraries [EPREFIX/lib]
+   --includedir=DIR        C header files [PREFIX/include]
+   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
+@@ -3001,7 +3013,8 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
+ ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ 
+ 
+-LIBS=-lm
++SAVED_LIBS="$LIBS"
++LIBS="$LIBS -lm"
+ 
+ TORCH_DIR=
+ TORCH_SUPPRESSED=no
+@@ -4041,6 +4054,9 @@ GOT_RSL_INC=no
+ GOT_RSL_LIB=no
+ RSL_SUPPRESSED=no
+ 
++echo "LIBS: $LIBS"
++
++
+ # Check whether --with-rsl was given.
+ if test "${with_rsl+set}" = set; then :
+   withval=$with_rsl;
+@@ -4297,7 +4313,7 @@ $as_echo_n "checking for RAVE installation... " >&6; }
+         TMPDIR=`echo "$TMPFIL" | sed -e"s/\/Lib\/_rave\.so//"`
+       fi
+     else
+-      if [ -d "$withval" -a -f "$withval/Lib/_rave.so" ]; then
++      if [ -d "$withval" -a -f "$withval/lib/libravetoolbox.so" ]; then
+         TMPDIR=$withval
+       fi
+     fi
+@@ -4384,8 +4400,8 @@ $as_echo "$PROJ_INCLUDE_FLAG" >&6; }
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for proj library flag used by RAVE" >&5
+ $as_echo_n "checking for proj library flag used by RAVE... " >&6; }
+ PROJ_LIBRARY_FLAG=`cat $RAVE_ROOT_DIR/mkf/def.mk | sed -n "/^PROJ_LIB_DIR=/p" | sed -n -e"s/^PROJ_LIB_DIR=[ 	]*\(.*\)/\1/p"`
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PROJ_INCLUDE_FLAG" >&5
+-$as_echo "$PROJ_INCLUDE_FLAG" >&6; }
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PROJ_LIBRARY_FLAG" >&5
++$as_echo "$PROJ_LIBRARY_FLAG" >&6; }
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for expat include flag used by RAVE" >&5
+ $as_echo_n "checking for expat include flag used by RAVE... " >&6; }
+@@ -4396,8 +4412,8 @@ $as_echo "$EXPAT_INCLUDE_FLAG" >&6; }
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for expat library flag used by RAVE" >&5
+ $as_echo_n "checking for expat library flag used by RAVE... " >&6; }
+ EXPAT_LIBRARY_FLAG=`cat $RAVE_ROOT_DIR/mkf/def.mk | sed -n "/^EXPAT_LIB_DIR=/p" | sed -n -e"s/^EXPAT_LIB_DIR=[ 	]*\(.*\)/\1/p"`
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $EXPAT_INCLUDE_FLAG" >&5
+-$as_echo "$EXPAT_INCLUDE_FLAG" >&6; }
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $EXPAT_LIBRARY_FLAG" >&5
++$as_echo "$EXPAT_LIBRARY_FLAG" >&6; }
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking if expat is supressed" >&5
+ $as_echo_n "checking if expat is supressed... " >&6; }
+@@ -4790,8 +4806,8 @@ if [ "$HLHDF_HDF5_LIB" != "" ]; then
+   LD_PRINTOUT=$LD_PRINTOUT:`echo "$HLHDF_HDF5_LIB" | sed -e"s/[ \t]*-L//"`
+ fi
+ 
+-if [ "$PROJ_LIB_FLAG" != "" ]; then
+-  LD_PRINTOUT=$LD_PRINTOUT:`echo "$PROJ_LIB_FLAG" | sed -e"s/[ \t]*-L//"`
++if [ "$PROJ_LIBRARY_FLAG" != "" ]; then
++  LD_PRINTOUT=$LD_PRINTOUT:`echo "$PROJ_LIBRARY_FLAG" | sed -e"s/[ \t]*-L//"`
+ fi
+ 
+ if [ "$EXPAT_LIBRARY_FLAG" != "" ]; then
+@@ -4818,6 +4834,10 @@ if [ "$RSL_LIBRARY_FLAG" != "" ]; then
+   LD_PRINTOUT=$LD_PRINTOUT:`echo "$RSL_LIBRARY_FLAG" | sed -e"s/[ \t]*-L//"`
+ fi
+ 
++LIBS=$SAVED_LIBS
++
++
++
+ 
+ 
+ 
+diff --git a/configure.in b/configure.in
+index 1b994de..f94b9cc 100644
+--- a/configure.in
++++ b/configure.in
+@@ -16,7 +16,8 @@ fi
+ AC_PROG_CC
+ AC_PROG_CPP
+ 
+-LIBS=-lm
++SAVED_LIBS="$LIBS"
++LIBS="$LIBS -lm"
+ 
+ dnl Check that we install libmistnet
+ dnl
+@@ -210,6 +211,9 @@ RSL_LIB=
+ GOT_RSL_INC=no
+ GOT_RSL_LIB=no
+ RSL_SUPPRESSED=no
++
++echo "LIBS: $LIBS"
++
+ AC_ARG_WITH(rsl,[  --with-rsl=DIR	  The RSL root installation directory],
+ 		,withval=yes)
+ case $withval in
+@@ -300,7 +304,7 @@ case $withval in
+         TMPDIR=`echo "$TMPFIL" | sed -e"s/\/Lib\/_rave\.so//"`
+       fi
+     else
+-      if [[ -d "$withval" -a -f "$withval/Lib/_rave.so" ]]; then
++      if [[ -d "$withval" -a -f "$withval/lib/libravetoolbox.so" ]]; then
+         TMPDIR=$withval
+       fi
+     fi
+@@ -366,7 +370,7 @@ AC_MSG_RESULT($PROJ_INCLUDE_FLAG)
+ 
+ AC_MSG_CHECKING(for proj library flag used by RAVE)
+ PROJ_LIBRARY_FLAG=`cat $RAVE_ROOT_DIR/mkf/def.mk | sed -n "/^PROJ_LIB_DIR=/p" | sed -n -e"s/^PROJ_LIB_DIR=[[ 	]]*\(.*\)/\1/p"`
+-AC_MSG_RESULT($PROJ_INCLUDE_FLAG)
++AC_MSG_RESULT($PROJ_LIBRARY_FLAG)
+ 
+ AC_MSG_CHECKING(for expat include flag used by RAVE)
+ EXPAT_INCLUDE_FLAG=`cat $RAVE_ROOT_DIR/mkf/def.mk | sed -n "/^EXPAT_INCLUDE_DIR=/p" | sed -n -e"s/^EXPAT_INCLUDE_DIR=[[ 	]]*\(.*\)/\1/p"`
+@@ -374,7 +378,7 @@ AC_MSG_RESULT($EXPAT_INCLUDE_FLAG)
+ 
+ AC_MSG_CHECKING(for expat library flag used by RAVE)
+ EXPAT_LIBRARY_FLAG=`cat $RAVE_ROOT_DIR/mkf/def.mk | sed -n "/^EXPAT_LIB_DIR=/p" | sed -n -e"s/^EXPAT_LIB_DIR=[[ 	]]*\(.*\)/\1/p"`
+-AC_MSG_RESULT($EXPAT_INCLUDE_FLAG)
++AC_MSG_RESULT($EXPAT_LIBRARY_FLAG)
+ 
+ AC_MSG_CHECKING(if expat is supressed)
+ EXPAT_SUPPRESSED=`cat $RAVE_ROOT_DIR/mkf/def.mk | sed -n "/^EXPAT_SUPPRESSED=/p" | sed -n -e"s/^EXPAT_SUPPRESSED=[[ 	]]*\(.*\)/\1/p"`
+@@ -531,8 +535,8 @@ if [[ "$HLHDF_HDF5_LIB" != "" ]]; then
+   LD_PRINTOUT=$LD_PRINTOUT:`echo "$HLHDF_HDF5_LIB" | sed -e"s/[[ \t]]*-L//"`
+ fi
+ 
+-if [[ "$PROJ_LIB_FLAG" != "" ]]; then
+-  LD_PRINTOUT=$LD_PRINTOUT:`echo "$PROJ_LIB_FLAG" | sed -e"s/[[ \t]]*-L//"`
++if [[ "$PROJ_LIBRARY_FLAG" != "" ]]; then
++  LD_PRINTOUT=$LD_PRINTOUT:`echo "$PROJ_LIBRARY_FLAG" | sed -e"s/[[ \t]]*-L//"`
+ fi
+ 
+ if [[ "$EXPAT_LIBRARY_FLAG" != "" ]]; then
+@@ -559,6 +563,8 @@ if [[ "$RSL_LIBRARY_FLAG" != "" ]]; then
+   LD_PRINTOUT=$LD_PRINTOUT:`echo "$RSL_LIBRARY_FLAG" | sed -e"s/[[ \t]]*-L//"`
+ fi
+ 
++LIBS=$SAVED_LIBS
++
+ AC_SUBST(RAVE_ROOT_DIR)
+ AC_SUBST(RAVE_INCLUDE_FLAG)
+ AC_SUBST(RAVE_LIB_FLAG)
+@@ -598,6 +604,8 @@ AC_SUBST(TORCH_LIBRARY_FLAG)
+ AC_SUBST(MISTNET_LIB)
+ AC_SUBST(MISTNET_CFLAG)
+ 
++AC_SUBST(LIBS)
++
+ AC_SUBST(LD_PRINTOUT)
+ AC_CONFIG_FILES(def.mk)
+ AC_CONFIG_FILES(vol2bird.sh)
+diff --git a/def.mk.in b/def.mk.in
+index db6dc40..e479dc9 100644
+--- a/def.mk.in
++++ b/def.mk.in
+@@ -12,6 +12,7 @@ prefix=             @prefix@
+ CC=                 @RAVECC@
+ CCOPTS=             @RAVECCOPTS@ -Wno-nullability-completeness
+ LDFLAGS=            @RAVELDFLAGS@
++LIBS=               @LIBS@
+ 
+ # (from hlhdf)
+ LDSHARED=           @HLHDFLDSHARED@
+diff --git a/lib/Makefile b/lib/Makefile
+index 9ad7c77..91e0cc7 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -17,7 +17,7 @@
+ # use gcc if not set already
+ #CC      = /usr/bin/gcc
+ #CFLAGS  += $(RSL_CFLAG) -fPIC -x c -DFPRINTFON
+-CFLAGS  += $(RSL_CFLAG) $(IRIS_CFLAG) -fPIC -g -x c 
++CFLAGS  += $(RSL_CFLAG) $(IRIS_CFLAG)  $(RAVE_MODULE_CFLAGS) -fPIC -g -x c 
+ LDFLAGS += -shared -Wall
+ 
+ # set linker flag on OSX
+@@ -54,7 +54,7 @@ libvol2bird.so : $(LIBVOL2BIRD_DEPS)
+ 	$(SRC_VOL2BIRD_DIR)/librsl.c \
+ 	$(SRC_VOL2BIRD_DIR)/librender.c \
+ 	$(LDFLAGS) \
+-	-Wall -o libvol2bird.so $(RAVE_MODULE_LIBRARIES) -lconfuse -lgsl -lgslcblas $(RSL_LIB) $(IRIS_LIB)
++	-Wall -o libvol2bird.so $(RAVE_MODULE_LIBRARIES) -lconfuse -lgsl -lgslcblas $(RSL_LIB) $(IRIS_LIB) $(LIBS)
+ 
+ .PHONY : install
+ install : libvol2bird.so
+diff --git a/lib/libvol2bird.c b/lib/libvol2bird.c
+index c0d5022..1cb7789 100644
+--- a/lib/libvol2bird.c
++++ b/lib/libvol2bird.c
+@@ -842,7 +842,7 @@ static vol2birdScanUse_t* determineScanUse(PolarVolume_t* volume, vol2bird_t* al
+         }
+         
+         // check whether spectrum width parameter is present, and store its name
+-        sprintf(scanUse[iScan].wradName,"");
++        strcpy(scanUse[iScan].wradName,"");
+ 		if (PolarScan_hasParameter(scan, "WRAD")){
+ 			sprintf(scanUse[iScan].wradName,"WRAD");	
+ 		}
+@@ -3399,7 +3399,7 @@ radarDataFormat determineRadarFormat(char* filename){
+     // try to load the file using Rave
+     // unfortunately this loads the entire file into memory,
+     // but no other file type check function available in Rave.
+-    RaveIO_t* raveio = RaveIO_open(filename);
++    RaveIO_t* raveio = RaveIO_open(filename, 0, NULL);
+ 
+     // check that a valid RaveIO_t pointer was returned
+     if (raveio != (RaveIO_t*) NULL){
+@@ -4451,7 +4451,7 @@ PolarVolume_t* vol2birdGetODIMVolume(char* filenames[], int nInputFiles) {
+ 
+     for (int i=0; i<nInputFiles; i++){
+         // read the file
+-        RaveIO_t* raveio = RaveIO_open(filenames[i]);
++        RaveIO_t* raveio = RaveIO_open(filenames[i], 0, NULL);
+ 
+         if(raveio == NULL){
+             fprintf(stderr, "Warning: failed to read file %s in ODIM format, ignoring.\n", filenames[i]);
+@@ -4570,7 +4570,7 @@ RaveIO_t* vol2birdIO_open(const char* filename)
+     goto done;
+   }
+ 
+-  if (!RaveIO_load(result)) {
++  if (!RaveIO_load(result, 0, NULL)) {
+     RAVE_WARNING0("Failed to load file");
+     RAVE_OBJECT_RELEASE(result);
+     goto done;
+diff --git a/src/Makefile b/src/Makefile
+index 0dd6dd2..8be566b 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -18,7 +18,7 @@
+ CC      ?= gcc
+ CXX     = /usr/bin/c++   #note: has to be same compiler as used for Pytorch
+ #CFLAGS  += -fPIC -x c -DFPRINTFON
+-CFLAGS  += -I../lib -Wall -g $(RSL_CFLAG) $(IRIS_CFLAG) $(MISTNET_CFLAG)
++CFLAGS  += -I../lib -Wall -g $(RSL_CFLAG) $(IRIS_CFLAG) $(MISTNET_CFLAG) $(RAVE_MODULE_CFLAGS)
+ LDFLAGS += -L../lib
+ 
+ # define where the vol2bird stuff is

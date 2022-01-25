@@ -1,0 +1,63 @@
+diff --git a/configure b/configure
+index c6000b4..ded983a 100755
+--- a/configure
++++ b/configure
+@@ -4584,7 +4584,10 @@ then
+       fi
+       ;;
+     Darwin/*)
+-      PYLDSHARED='$(CC) $(LDFLAGS) -bundle'
++      PYLDSHARED='$(CC) $(LDFLAGS) -dynamiclib'
++      ;;
++    darwin/*)
++      PYLDSHARED='$(CC) $(LDFLAGS) -dynamiclib'
+       ;;
+     Linux*|GNU*|QNX*)
+       PYLDSHARED='$(CC) -shared'
+@@ -4601,6 +4604,8 @@ $as_echo "$PYLDSHARED" >&6; }
+ fi
+ 
+ 
++
++
+ # Check whether --with-numpy was given.
+ if test "${with_numpy+set}" = set; then :
+   withval=$with_numpy;
+diff --git a/configure.ac b/configure.ac
+index b3b7667..41c12ae 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -369,7 +369,10 @@ then
+       fi 
+       ;;
+     Darwin/*)
+-      PYLDSHARED='$(CC) $(LDFLAGS) -bundle'
++      PYLDSHARED='$(CC) $(LDFLAGS) -dynamiclib'
++      ;;
++    darwin/*)
++      PYLDSHARED='$(CC) $(LDFLAGS) -dynamiclib'
+       ;;
+     Linux*|GNU*|QNX*)
+       PYLDSHARED='$(CC) -shared'
+@@ -384,6 +387,8 @@ fi
+ AC_MSG_RESULT($PYLDSHARED)
+ fi
+ 
++
++
+ dnl -----------------------------
+ dnl Try to locate the numpy include file 'arrayobject.h' automatically,
+ dnl if this does not succeed, then the user has to specify this argument
+diff --git a/hlhdf/Makefile b/hlhdf/Makefile
+index e349b79..5f5a740 100644
+--- a/hlhdf/Makefile
++++ b/hlhdf/Makefile
+@@ -30,7 +30,7 @@
+ 
+ CFLAGS= $(OPTS) $(CCSHARED) $(DEFS) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) -DDEBUG_HLHDF
+ 
+-TARGET=libhlhdf.so
++TARGET=libhlhdf.dylib
+ TARGET.2=libhlhdf.a
+ SOURCES=hlhdf.c hlhdf_node.c hlhdf_nodelist.c hlhdf_compound.c hlhdf_compound_utils.c hlhdf_read.c hlhdf_write.c hlhdf_debug.c hlhdf_alloc.c
+ INSTALL_HEADERS=hlhdf.h hlhdf_types.h hlhdf_node.h hlhdf_nodelist.h hlhdf_compound.h hlhdf_compound_utils.h hlhdf_read.h hlhdf_write.h hlhdf_debug.h hlhdf_alloc.h
