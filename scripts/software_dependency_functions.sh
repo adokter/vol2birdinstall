@@ -124,7 +124,12 @@ rave_config_param()
   elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
   elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
-    RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf  --with-proj=/opt/homebrew"
+    RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf"
+    if [ "$(arch)" = "arm64" ]; then
+      RAVE_CONFIG_PARAMS="$RAVE_CONFIG_PARAMS --with-proj=/opt/homebrew"    
+    else
+      RAVE_CONFIG_PARAMS="$RAVE_CONFIG_PARAMS --with-proj=/usr/local"    
+    fi
   else
     echo "Not a prededfined OS, using best effort to identify rave config parameters" >&2
   fi
@@ -478,9 +483,6 @@ install_libtorch()
 
   add_installed_version "$BUILD_LOG" LIBTORCH "1.7.1"
 }
-
-https://download.pytorch.org/libtorch/cpu/libtorch-macosx-arm64-1.7.1.zip
-#osx-arm64
 
 install_vol2bird()
 {
