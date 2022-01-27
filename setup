@@ -69,8 +69,8 @@ do_install()
   elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
     sh "$SCRIPTPATH/scripts/install_redhat_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
   elif [ "$OS_NAME" = "Darwin" ]; then
-    echo "Skipping dependencies"
-    #sh "$SCRIPTPATH/scripts/install_macos_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
+    #echo "Skipping dependencies"
+    sh "$SCRIPTPATH/scripts/install_macos_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
   fi
   
   mkdir -p "$BUILDDIR" || exit_with_error 127 "Could not create build directory $BUILDDIR"
