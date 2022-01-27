@@ -28,7 +28,7 @@ You can also specify `--prefix=<path>` to the setup script to get software insta
  ./setup --prefix=/my/local/software install
 ```
 
-### RedHat Prerequisities
+### RedHat Prerequisites
 When building the system on RedHat the subscription must be enabled so that it is possible to install all required dependencies. 
 During the setup, libraries belonging to extra repos will also be installed. In order for this to work you must run the following
 command before setting up the system:
