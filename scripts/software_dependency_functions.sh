@@ -35,7 +35,8 @@ IRIS2ODIM_SOURCE_CODE=https://github.com/adokter/iris2odim.git
 IRIS2ODIM_VERSION=376ae90cf93baafe225e4d394f634fd178e9a238
 
 RSL_SOURCE_CODE=https://github.com/adokter/rsl.git
-RSL_VERSION=v1.49-25-ga69cd97
+#RSL_VERSION=v1.49-25-ga69cd97
+RSL_VERSION=a69cd97ca457949ac1d8f83eff9bf85cb3c39fc5
 
 VOL2BIRD_SOURCE_CODE=https://github.com/adokter/vol2bird.git
 #VOL2BIRD_VERSION=0.5.0-81-g8a23dfb
@@ -424,7 +425,7 @@ install_rsl()
   if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     patch -p1 < "$PATCHDIR/rsl_tirpc.patch" || exit_with_error 127 "(RSL) Failed to patch system"
   fi
-  patch -p1 < "$PATCHDIR/rsl_fwd_declarations.patch" || exit_with_error 127 "(RSL) Failed to patch fwd declarations"
+  #patch -p1 < "$PATCHDIR/rsl_fwd_declarations.patch" || exit_with_error 127 "(RSL) Failed to patch fwd declarations"
     
   RSL_CFLAGS=`rsl_cflags`
   RSL_LDFLAGS=`rsl_ldflags`
