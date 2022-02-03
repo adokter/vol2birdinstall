@@ -38,7 +38,8 @@ RSL_SOURCE_CODE=https://github.com/adokter/rsl.git
 RSL_VERSION=v1.49-25-ga69cd97
 
 VOL2BIRD_SOURCE_CODE=https://github.com/adokter/vol2bird.git
-VOL2BIRD_VERSION=0.5.0-81-g8a23dfb
+#VOL2BIRD_VERSION=0.5.0-81-g8a23dfb
+VOL2BIRD_VERSION=7a25469972ad0375aecde32cf52be21a795452ff
 
 CURRENT_MODULES="PROJ4 HLHDF RAVE IRIS2ODIM RSL LIBTORCH VOL2BIRD"
 
@@ -511,8 +512,8 @@ install_vol2bird()
   
   cd "$BUILDDIR/vol2bird" || exit_with_error 127 "(VOL2BIRD) Could not change to folder $BUILDDIR/vol2bird"
   
-  patch -p1 < "$PATCHDIR/vol2bird.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch system for building"
-  patch -p1 < "$PATCHDIR/vol2bird_defines.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch defines for building"
+  #patch -p1 < "$PATCHDIR/vol2bird.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch system for building"
+  #patch -p1 < "$PATCHDIR/vol2bird_defines.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch defines for building"
   
   if  [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     autoconf || exit_with_error 127 "(VOL2BIRD) Could not recreate configure file"
