@@ -543,10 +543,22 @@ export $LL_PATH_NAME=$LDPATH
 $PREFIX/vol2bird/bin/vol2bird \$@
 EOF
   if [ $? -ne 0 ]; then
-    exit_with_error 127 "(VOL2BIRD) Could not create start script"
+    exit_with_error 127 "(VOL2BIRD) Could not create start script for vol2bird"
   fi
   chmod +x "$PREFIX/vol2bird/bin/vol2bird.sh" || exit_with_error 127 "(VOL2BIRD) Could not change permissions on $PREFIX/vol2bird/bin/vol2bird.sh"
   echo "vol2bird.sh installed in $PREFIX/vol2bird/bin/vol2bird.sh"
+
+  cat <<EOF > "$PREFIX/vol2bird/bin/rsl2odim.sh"
+#!/bin/bash
+export $LL_PATH_NAME=$LDPATH
+$PREFIX/vol2bird/bin/rsl2odim \$@
+EOF
+  if [ $? -ne 0 ]; then
+    exit_with_error 127 "(VOL2BIRD) Could not create start script for rsl2odim"
+  fi
+  chmod +x "$PREFIX/vol2bird/bin/rsl2odim.sh" || exit_with_error 127 "(VOL2BIRD) Could not change permissions on $PREFIX/vol2bird/bin/rsl2odim.sh"
+  echo "rsl2odim.sh installed in $PREFIX/vol2bird/bin/vol2bird.sh"
+
   add_installed_version "$BUILD_LOG" VOL2BIRD "$VOL2BIRD_VERSION"
 }
 
