@@ -464,27 +464,27 @@ install_libtorch()
 
   echo -n "Installing libtorch...."
 
-  is_installed_version "$BUILD_LOG" LIBTORCH "1.7.1" && echo "skipping" && return 0
+  is_installed_version "$BUILD_LOG" LIBTORCH "1.10.2" && echo "skipping" && return 0
 
   cd "$DOWNLOADS" || exit_with_error 127 "(LIBTORCH) Could not change to download directory $DOWNLOADS"
 
   if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
-     if [ ! -f "libtorch-shared-with-deps-1.7.1+cpu.zip" ]; then
-       wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.7.1%2Bcpu.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
+     if [ ! -f "libtorch-shared-with-deps-1.10.2+cpu.zip" ]; then
+       wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.10.2%2Bcpu.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
      fi
-     unzip -u libtorch-shared-with-deps-1.7.1+cpu.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
+     unzip -u libtorch-shared-with-deps-1.10.2+cpu.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
   elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
      if [ "$(arch)" != "arm64" ]; then
-       if [ ! -f "libtorch-macos-1.7.1.zip" ]; then
-         wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.7.1.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
+       if [ ! -f "libtorch-macos-1.10.2.zip" ]; then
+         wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.10.2.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
        fi
-       unzip -u libtorch-macos-1.7.1.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
+       unzip -u libtorch-macos-1.10.2.zip -d "${PREFIX}" || exit_with_error 127 "(LIBTORCH) Failed to unzip libtorch"
      fi
   fi
   
   cd "$CURRDIR" || exit_with_error 127 "(LIBTORCH) Could not change back to folder $CURRDIR"
 
-  add_installed_version "$BUILD_LOG" LIBTORCH "1.7.1"
+  add_installed_version "$BUILD_LOG" LIBTORCH "1.10.2"
 }
 
 install_vol2bird()
