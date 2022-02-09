@@ -181,14 +181,15 @@ vol2bird_config_param()
   PREFIX=$1
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`
-  VOL2BIRD_CONFIG_PARAMS="--with-libtorch=$PREFIX/libtorch --with-rsl=$PREFIX/rsl --with-rave=$PREFIX/rave --with-iris=yes"
+  
+  VOL2BIRD_CONFIG_PARAMS="--with-rsl=$PREFIX/rsl --with-rave=$PREFIX/rave --with-iris=yes"
   
   if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     GSLINC=`dpkg-query -L libgsl-dev | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g"`
     GSLLIB=`dpkg-query -L libgsl-dev | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g"`
     CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
     CONFUSELIB=`dpkg-query -L libconfuse-dev | grep libconfuse.so | sed -e "s/\/libconfuse.so//g"`
-    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-libtorch=$PREFIX/libtorch --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
     GSLINC=`locate gsl/gsl_vector.h 2>/dev/null | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
     if [ "$GSLINC" = "" ]; then
@@ -206,14 +207,16 @@ vol2bird_config_param()
     if [ "$CONFUSELIB" = "" ]; then
       CONFUSELIB=`repoquery -q -l libconfuse-devel | grep libconfuse.so | sed -e "s/\/libconfuse.so//g" | tail -1`
     fi
-    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-libtorch=$PREFIX/libtorch --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
   elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
     GSLINC=`brew ls --verbose gsl | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
     GSLLIB=`brew ls --verbose gsl | egrep -e "libgsl.dylib$" | sed -e "s/\/libgsl.dylib//g" | tail -1`
     CONFUSEINC=`brew ls --verbose confuse | grep confuse.h | sed -e "s/\/confuse.h//g" | tail -1`
     CONFUSELIB=`brew ls --verbose confuse | egrep -e 'libconfuse.dylib$' | sed -e "s/\/libconfuse.dylib//g" | tail -1`
     if [ "$(arch)" = "arm64" ]; then
-      VOL2BIRD_CONFIG_PARAMS="--with-rsl=$PREFIX/rsl --with-rave=$PREFIX/rave --with-iris=yes"
+      VOL2BIRD_CONFIG_PARAMS="--with-libtorch=/opt/homebrew $VOL2BIRD_CONFIG_PARAMS"
+    else
+      VOL2BIRD_CONFIG_PARAMS="--with-libtorch=/usr/local $VOL2BIRD_CONFIG_PARAMS"
     fi
     
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"

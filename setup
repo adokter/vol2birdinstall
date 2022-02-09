@@ -93,7 +93,9 @@ do_install()
   
   install_rsl "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
 
-  install_libtorch "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+  if [ "$OS_NAME" != "Darwin" ]; then
+    install_libtorch "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+  fi
 
   install_vol2bird "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
 }
