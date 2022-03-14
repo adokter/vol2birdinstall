@@ -56,6 +56,8 @@ print_usage()
   echo "Options:"
   echo "--prefix=<prefix>   Will install the software in the specified folder."
   echo "--remove=<modules>  A comma separated list of modules that should be removed from build history"
+  echo "--disable-mistnet   If mistnet support should be disabled. Default is enabled."
+  echo "--download-mistnet-nexrad  If installing and this is set. Then the mistnet_nexrad.pt will be downloaded and installed into <prefix>/etc."
   echo "--history           Prints the currently built modules"
   echo "--help              This help text"
 }
