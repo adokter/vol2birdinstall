@@ -29,7 +29,9 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 OS_VARIANT=`get_os_version`
 
-echo "OS_VARIANT=$OS_VARIANT"
+INSTALL_PREFIX=$1
+ENABLE_MISTNET=$2
+
 if [ "$OS_VARIANT" != "CentOS-8" -a "$OS_VARIANT" != "CentOS-7" \
      -a "$OS_VARIANT" != "RedHat-8" -a "$OS_VARIANT" != "RedHat-7" ]; then
   exit_with_error 127 "OS variant $OS_VARIANT not supported"

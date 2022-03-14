@@ -63,6 +63,7 @@ print_usage()
 do_install() 
 {
   prefix=$1
+  enable_mistnet=$2
   echo "OS_NAME=$OS_NAME"
   if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     sh "$SCRIPTPATH/scripts/install_debian_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
@@ -72,7 +73,7 @@ do_install()
     #echo "Skipping dependencies"
     sh "$SCRIPTPATH/scripts/install_macos_dependencies.sh" $*  || exit_with_error 127 "Could not install dependencies"
   fi
-  
+
   mkdir -p "$BUILDDIR" || exit_with_error 127 "Could not create build directory $BUILDDIR"
 
   mkdir -p "$DOWNLOADDIR" || exit_with_error 127 "Could not create download directory $DOWNLOADDIR"
@@ -93,11 +94,13 @@ do_install()
   
   install_rsl "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
 
-  if [ "$OS_NAME" != "Darwin" ]; then
-    install_libtorch "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+  if [ "$enable_mistnet" = "yes" ]; then
+    if [ "$OS_NAME" != "Darwin" ]; then
+      install_libtorch "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+    fi
   fi
 
-  install_vol2bird "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR"
+  install_vol2bird "$DOWNLOADDIR" "$BUILDDIR" "$prefix" "$PATCHDIR" "$enable_mistnet"
 }
 
 do_clean()
@@ -115,7 +118,8 @@ DO_INSTALL=no
 DO_CLEAN=no
 DO_DISTCLEAN=no
 REMOVE_MODULE=
-
+ENABLE_MISTNET=yes
+DOWNLOAD_MISTNET_NEXRAD=no
 PREFIX="$DEFAULT_PREFIX"
 
 for arg in $*; do
@@ -125,6 +129,12 @@ for arg in $*; do
       ;;
     --remove=*)
       REMOVE_MODULE=`echo $arg | sed 's/[-a-zA-Z0-9]*=//'`
+      ;;
+    --disable-mistnet)
+      ENABLE_MISTNET=no
+      ;;
+    --download-mistnet-nexrad)
+      DOWNLOAD_MISTNET_NEXRAD=yes
       ;;
     --history)
       print_module_status "$BUILDDIR"
@@ -164,6 +174,12 @@ if [ "$DO_CLEAN" = "yes" ]; then
 fi
 
 if [ "$DO_INSTALL" = "yes" ]; then
-  do_install "$PREFIX"
+  do_install "$PREFIX" "$ENABLE_MISTNET"
+  if [ "$DOWNLOAD_MISTNET_NEXRAD" = "yes" ]; then
+    mkdir -p "$PREFIX/etc"
+    if [ ! -f "$PREFIX/etc/mistnet_nexrad.pt" ]; then
+      wget http://mistnet.s3.amazonaws.com/mistnet_nexrad.pt -O "$PREFIX/etc/mistnet_nexrad.pt"
+    fi
+  fi
 fi
 

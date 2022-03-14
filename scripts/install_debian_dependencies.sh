@@ -29,6 +29,9 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 OS_VARIANT=`get_os_version`
 
+INSTALL_PREFIX=$1
+ENABLE_MISTNET=$2
+
 #
 sudo apt-get update -y || exit_with_error 127 "Could not update apt"
 sudo apt-get install --no-install-recommends -y git libbz2-dev || exit_with_error 127 "Could not install dependencies"

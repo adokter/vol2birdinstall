@@ -180,6 +180,8 @@ rsl_libs()
 vol2bird_config_param()
 {
   PREFIX=$1
+  enable_mistnet=$2
+  
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`
   
@@ -190,7 +192,10 @@ vol2bird_config_param()
     GSLLIB=`dpkg-query -L libgsl-dev | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g"`
     CONFUSEINC=`dpkg-query -L libconfuse-dev | grep confuse.h | sed -e "s/\/confuse.h//g"`
     CONFUSELIB=`dpkg-query -L libconfuse-dev | grep libconfuse.so | sed -e "s/\/libconfuse.so//g"`
-    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-libtorch=$PREFIX/libtorch --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+    if [ "$enable_mistnet" = "yes" ]; then
+      VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-libtorch=$PREFIX/libtorch"
+    fi
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
     GSLINC=`locate gsl/gsl_vector.h 2>/dev/null | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
     if [ "$GSLINC" = "" ]; then
@@ -208,18 +213,22 @@ vol2bird_config_param()
     if [ "$CONFUSELIB" = "" ]; then
       CONFUSELIB=`repoquery -q -l libconfuse-devel | grep libconfuse.so | sed -e "s/\/libconfuse.so//g" | tail -1`
     fi
-    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-libtorch=$PREFIX/libtorch --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+    VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
+    if [ "$enable_mistnet" = "yes" ]; then
+      VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-libtorch=$PREFIX/libtorch"
+    fi
   elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
     GSLINC=`brew ls --verbose gsl | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
     GSLLIB=`brew ls --verbose gsl | egrep -e "libgsl.dylib$" | sed -e "s/\/libgsl.dylib//g" | tail -1`
     CONFUSEINC=`brew ls --verbose confuse | grep confuse.h | sed -e "s/\/confuse.h//g" | tail -1`
     CONFUSELIB=`brew ls --verbose confuse | egrep -e 'libconfuse.dylib$' | sed -e "s/\/libconfuse.dylib//g" | tail -1`
-    if [ "$(arch)" = "arm64" ]; then
-      VOL2BIRD_CONFIG_PARAMS="--with-libtorch=/opt/homebrew $VOL2BIRD_CONFIG_PARAMS"
-    else
-      VOL2BIRD_CONFIG_PARAMS="--with-libtorch=/usr/local $VOL2BIRD_CONFIG_PARAMS"
+    if [ "$enable_mistnet" = "yes" ]; then    
+      if [ "$(arch)" = "arm64" ]; then
+        VOL2BIRD_CONFIG_PARAMS="--with-libtorch=/opt/homebrew $VOL2BIRD_CONFIG_PARAMS"
+      else
+        VOL2BIRD_CONFIG_PARAMS="--with-libtorch=/usr/local $VOL2BIRD_CONFIG_PARAMS"
+      fi
     fi
-    
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
   else
     echo "Not a prededfined OS, using best effort to identify vol2bird config parameters" >&2
@@ -498,6 +507,8 @@ install_vol2bird()
   BUILDDIR=$2
   PREFIX=$3
   PATCHDIR=$4
+  enable_mistnet=$5
+  
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`
   BUILD_LOG="$BUILDDIR/.built_packages"
@@ -519,14 +530,11 @@ install_vol2bird()
   
   cd "$BUILDDIR/vol2bird" || exit_with_error 127 "(VOL2BIRD) Could not change to folder $BUILDDIR/vol2bird"
   
-  #patch -p1 < "$PATCHDIR/vol2bird.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch system for building"
-  #patch -p1 < "$PATCHDIR/vol2bird_defines.patch" || exit_with_error 127 "(VOL2BIRD) Could not patch defines for building"
-  
   if  [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
     autoconf || exit_with_error 127 "(VOL2BIRD) Could not recreate configure file"
   fi
 
-  VOL2BIRD_CONFIG_PARAM=`vol2bird_config_param $PREFIX`
+  VOL2BIRD_CONFIG_PARAM=`vol2bird_config_param $PREFIX $enable_mistnet`
 
   echo "VOL2BIRD PARAM: $VOL2BIRD_CONFIG_PARAM"
 

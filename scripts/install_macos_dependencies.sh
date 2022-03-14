@@ -29,9 +29,13 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 OS_VARIANT=`get_os_version`
 
-echo "$OS_VARIANT"
+INSTALL_PREFIX=$1
+ENABLE_MISTNET=$2
 
 brew install proj
 brew install confuse hdf5@1.10 gcc wget zlib flex automake libtool cmake || exit_with_error 127 "Could not install dependencies"
-brew install gsl libtorch || exit_with_error 127 "Could not install dependencies"
+brew install gsl || exit_with_error 127 "Could not install dependencies"
+if [ "$ENABLE_MISTNET" = "yes" ]; then
+  brew install libtorch || exit_with_error 127 "Could not install dependencies"
+fi
 
