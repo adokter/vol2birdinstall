@@ -34,7 +34,7 @@ You can also specify `--prefix=<path>` to the setup script to get software insta
 To upgrade an existing installation, run
 ```
 ./setup distclean
-./setup setup
+./setup install
 ```
 
 ### RedHat Prerequisites
