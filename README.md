@@ -33,7 +33,11 @@ You can also specify `--prefix=<path>` to the setup script to get software insta
 ### upgrading an existing installation
 To upgrade an existing installation, run
 ```
-./setup distclean
+# pull latest changes
+git pull
+# Clean the .downloads and .build catalogues, all software will be fetched and rebuilt
+./setup clean
+# install
 ./setup install
 ```
 
