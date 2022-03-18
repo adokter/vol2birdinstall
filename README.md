@@ -10,6 +10,8 @@ The installer attempts to install as many stock packages using the package insta
 
 If you by any chance are running a different linux distribution or MacOS, the scripts will perform a best effort to identify the operating system you are running.
 
+### installation
+
 The default installation directory is `/opt/vol2bird`. This might not be writable by the user that installs the system and therefor it might be necessary to
 run:
 ```
@@ -26,6 +28,13 @@ and if all goes as expected, the software will be placed in `/opt/vol2bird`.
 You can also specify `--prefix=<path>` to the setup script to get software installed at a different place. E.g.
 ```
  ./setup --prefix=/my/local/software install
+```
+
+### upgrading an existing installation
+To upgrade an existing installation, run
+```
+./setup distclean
+./setup setup
 ```
 
 ### RedHat Prerequisites
