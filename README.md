@@ -35,7 +35,9 @@ To upgrade an existing installation, run
 ```
 # pull latest changes
 git pull
-# Clean the .downloads and .build catalogues, all software will be fetched and rebuilt
+# Clean the .build catalogues, all software will be rebuilt
+./setup clean
+# (optional) Clean the .downloads and .build catalogues, all software will be fetched and rebuilt
 ./setup clean
 # install
 ./setup install
