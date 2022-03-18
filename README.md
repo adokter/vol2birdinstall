@@ -38,7 +38,7 @@ git pull
 # Clean the .build catalogues, all software will be rebuilt
 ./setup clean
 # (optional) Clean the .downloads and .build catalogues, all software will be fetched and rebuilt
-./setup clean
+./setup distclean
 # install
 ./setup install
 ```
