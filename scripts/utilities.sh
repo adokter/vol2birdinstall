@@ -106,9 +106,7 @@ has_been_installed() {
     echo ""
     return 0
   fi
-  echo "X"
   VAR=`cat "$1" | egrep '^'"$2"'$'`
-  echo "Y"
   if [ "$VAR" != "" ]; then
     if [ "$3" != "" ]; then
       echo "$3"
@@ -188,7 +186,7 @@ add_installed_version() {
     touch "$1"
   fi
   remove_installed "$1" "$2"
-  echo "MODULE=$2\tVERSION=$3" >> "$1"
+  echo "MODULE=$2	VERSION=$3" >> "$1"
 }
 
 # Adds the arg string to a file

@@ -75,7 +75,7 @@ hdf5_include_dir()
   OS_VARIANT=`get_os_version`
   if [ "$OS_NAME" = "Ubuntu" ]; then
     echo "/usr/include/hdf5/serial"
-  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     echo "/usr/include"
   elif [ "$OS_NAME" = "Darwin" ]; then
     if [ -f "/usr/local/opt/hdf5@1.10/include/hdf5.h" ]; then
@@ -114,6 +114,7 @@ hlhdf_config_param()
     fi
   else
     echo "Not a prededfined OS, using best effort to identify hlhdf config parameters" >&2
+    HLHDF_CONFIG_PARAMS="--with-hdf5=yes --with-zlib=yes"
   fi
   echo "--without-python $HLHDF_CONFIG_PARAMS"
 }
@@ -126,7 +127,7 @@ rave_config_param()
   RAVE_CONFIG_PARAMS=""
   if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
-  elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" ]; then
+  elif [ "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" -o "$OS_NAME" = "Rocky Linux" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
   elif [ "$OS_NAME" = "Darwin" -o "$OS_NAME" = "darwin" ]; then
     RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf"
@@ -137,6 +138,7 @@ rave_config_param()
     fi
   else
     echo "Not a prededfined OS, using best effort to identify rave config parameters" >&2
+    RAVE_CONFIG_PARAMS="--with-hlhdf=$PREFIX/hlhdf --with-proj=$PREFIX"
   fi
   echo "$RAVE_CONFIG_PARAMS"
 }
@@ -147,7 +149,7 @@ rsl_cflags()
   OS_NAME=`get_os_name`
   if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-I"`dpkg-query -L libtirpc-dev | grep "rpc/rpc.h" | sed -e "s/rpc\/rpc.h//g"`
-  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     echo "-I/usr/include/tirpc"
   fi
   echo ""
@@ -157,9 +159,9 @@ rsl_ldflags()
 {
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`  
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10"-o "$OS_NAME" = "Debian GNU/Linux" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-L"`dpkg-query -L libtirpc-dev | egrep -e 'libtirpc.so$' | sed -e "s/\/libtirpc.so//g"`
-  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     echo "-ltirpc"
   fi
   echo ""
@@ -171,7 +173,7 @@ rsl_libs()
   OS_NAME=`get_os_name`  
   if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-ltirpc"
-  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     echo "-ltirpc"
   fi
   echo ""
@@ -196,22 +198,22 @@ vol2bird_config_param()
     if [ "$enable_mistnet" = "yes" ]; then
       VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-libtorch=$PREFIX/libtorch"
     fi
-  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
-    GSLINC=`locate gsl/gsl_vector.h 2>/dev/null | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
+    GSLINC=`repoquery -q -l gsl-devel | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
     if [ "$GSLINC" = "" ]; then
-      GSLINC=`repoquery -q -l gsl-devel | grep gsl/gsl_vector.h | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
+      GSLINC=`locate gsl/gsl_vector.h 2>/dev/null | sed -e "s/\/gsl\/gsl_vector.h//g" | tail -1`
     fi
-    GSLLIB=`locate libgsl.so 2>/dev/null | egrep -e 'libgsl.so$' | sed -e "s/\/libgsl.so//g" | tail -1`
+    GSLLIB=`repoquery -q -l gsl-devel | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g" | tail -1`
     if [ "$GSLLIB" = "" ]; then
-      GSLLIB=`repoquery -q -l gsl-devel | egrep -e "libgsl.so$" | sed -e "s/\/libgsl.so//g" | tail -1`
+      GSLLIB=`locate libgsl.so 2>/dev/null | egrep -e 'libgsl.so$' | sed -e "s/\/libgsl.so//g" | tail -1`
     fi
-    CONFUSEINC=`locate confuse.h | egrep -e 'confuse.h$' | sed -e "s/\/confuse.h//g" | tail -1`
+    CONFUSEINC=`repoquery -q -l libconfuse-devel | grep confuse.h | sed -e "s/\/confuse.h//g" | tail -1`
     if [ "$CONFUSEINC" = "" ]; then
-      CONFUSEINC=`repoquery -q -l libconfuse-devel | grep confuse.h | sed -e "s/\/confuse.h//g" | tail -1`
+      CONFUSEINC=`locate confuse.h | egrep -e 'confuse.h$' | sed -e "s/\/confuse.h//g" | tail -1`
     fi
-    CONFUSELIB=`locate libconfuse.so | egrep -e 'libconfuse.so$'  | sed -e "s/\/libconfuse.so//g" | tail -1`
+    CONFUSELIB=`repoquery -q -l libconfuse-devel | grep libconfuse.so | sed -e "s/\/libconfuse.so//g" | tail -1`
     if [ "$CONFUSELIB" = "" ]; then
-      CONFUSELIB=`repoquery -q -l libconfuse-devel | grep libconfuse.so | sed -e "s/\/libconfuse.so//g" | tail -1`
+      CONFUSELIB=`locate libconfuse.so | egrep -e 'libconfuse.so$'  | sed -e "s/\/libconfuse.so//g" | tail -1`
     fi
     VOL2BIRD_CONFIG_PARAMS="$VOL2BIRD_CONFIG_PARAMS --with-gsl=$GSLINC,$GSLLIB --with-confuse=$CONFUSEINC,$CONFUSELIB"
     if [ "$enable_mistnet" = "yes" ]; then
@@ -244,7 +246,7 @@ get_vol2bird_configure_LIBS()
   
   if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
-  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8"  ]; then
+  elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
   else
     VOL2BIRD_configure_LIBS=
@@ -482,7 +484,7 @@ install_libtorch()
 
   cd "$DOWNLOADS" || exit_with_error 127 "(LIBTORCH) Could not change to download directory $DOWNLOADS"
 
-  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
+  if [ "$OS_NAME" = "Ubuntu" -o "$OS_NAME" = "CentOS" -o "$OS_NAME" = "RedHat" -o "$OS_NAME" = "Debian GNU/Linux" -o "$OS_NAME" = "Rocky Linux" ]; then
      if [ ! -f "libtorch-shared-with-deps-1.10.2+cpu.zip" ]; then
        wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-1.10.2%2Bcpu.zip || exit_with_error 127 "(LIBTORCH) Failed to fetch libtorch dependency"
      fi
@@ -530,7 +532,7 @@ install_vol2bird()
   
   cd "$BUILDDIR/vol2bird" || exit_with_error 127 "(VOL2BIRD) Could not change to folder $BUILDDIR/vol2bird"
   
-  if  [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" ]; then
+  if  [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     autoconf || exit_with_error 127 "(VOL2BIRD) Could not recreate configure file"
   fi
 

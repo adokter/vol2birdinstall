@@ -28,12 +28,14 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 . "$SCRIPTPATH/utilities.sh"
 
 OS_VARIANT=`get_os_version`
+OS_NAME=`get_os_name`
 
 INSTALL_PREFIX=$1
 ENABLE_MISTNET=$2
 
 if [ "$OS_VARIANT" != "CentOS-8" -a "$OS_VARIANT" != "CentOS-7" \
-     -a "$OS_VARIANT" != "RedHat-8" -a "$OS_VARIANT" != "RedHat-7" ]; then
+     -a "$OS_VARIANT" != "RedHat-8" -a "$OS_VARIANT" != "RedHat-7" \
+     -a "$OS_NAME" != "Rocky Linux" ]; then
   exit_with_error 127 "OS variant $OS_VARIANT not supported"
 fi
 
@@ -56,4 +58,5 @@ sudo yum install -y libconfuse-devel hdf5-devel gcc gcc-c++ wget unzip make cmak
 sudo yum install -y gsl gsl-devel || exit_with_error 127 "Could not install dependencies"
 sudo yum install -y libtirpc-devel || exit_with_error 127 "Could not install libtirpc"
 sudo yum install -y yum-utils || exit_with_error 127 "Could not install yum utils"
+repoquery -y >> /dev/null 2>&1 || exit_with_error 127 "Could not update repoquery"
 sudo yum install -y autoconf || exit_with_error 127 "Could not install autoconf"
