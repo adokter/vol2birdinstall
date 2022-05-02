@@ -163,7 +163,7 @@ done
 if [ "$REMOVE_MODULE" != "" ]; then
   MODULES=`echo $REMOVE_MODULE | tr ',' ' '`
   for m in $MODULES; do
-    remove_built_module "$BUILDDIR/.built_packages" $m
+    remove_built_module "$BUILDDIR" $m
   done
 fi
 

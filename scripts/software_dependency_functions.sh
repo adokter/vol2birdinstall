@@ -63,10 +63,8 @@ print_module_status()
 
 remove_built_module()
 {
-  BUILDDIR=$1
-  MODULE=$2
-  BUILD_LOG="$BUILDDIR/.built_packages"
-  remove_installed "$BUILD_LOG" $MODULE
+  echo "Removing $2 from build history"
+  remove_installed "$1/.built_packages" $2
 }
 
 hdf5_include_dir()
