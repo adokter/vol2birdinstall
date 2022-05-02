@@ -569,7 +569,7 @@ EOF
 #!/bin/bash
 export $LL_PATH_NAME=$LDPATH
 export PATH=$PREFIX/rsl/bin:\$PATH
-$PREFIX/vol2bird/bin/rsl2odim \$@
+$PREFIX/vol2bird/bin/rsl2odim "\$@"
 EOF
   if [ $? -ne 0 ]; then
     exit_with_error 127 "(VOL2BIRD) Could not create start script for rsl2odim"
