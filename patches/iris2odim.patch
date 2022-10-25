@@ -33,9 +33,24 @@ index 6395d7b..79e840a 100644
  .PHONY=clean
  clean:
 diff --git a/src/Makefile b/src/Makefile
-index 9fb83a7..67dc240 100644
+index 9fb83a7..4c8fabd 100644
 --- a/src/Makefile
 +++ b/src/Makefile
+@@ -24,11 +24,11 @@
+ ###########################################################################
+ -include $(RAVEROOT)/rave/mkf/def.mk
+ 
+-IRIS2ODIMINC= -I. $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) \
++IRIS2ODIMINC= -I. $(NUMPY_INCLUDE_DIR) $(PROJ_INCLUDE_DIR) $(INCLUDE_PYTHON) \
+ 		-I$(HLHDF_INCLUDE_DIR) $(ZLIB_INCDIR) $(HDF5_INCDIR) \
+-		$(PROJ_INCLUDE_DIR) $(RAVE_INCLUDE_FLAG)
++		$(RAVE_INCLUDE_FLAG)
+ 
+-LDFLAGS+= -L. -L$(HLHDF_LIB_DIR) $(ZLIB_LIBDIR) $(HDF5_LIBDIR) $(PROJ_LIB_DIR) \
++LDFLAGS+= -L. -L$(HLHDF_LIB_DIR) $(PROJ_LIB_DIR) $(ZLIB_LIBDIR) $(HDF5_LIBDIR) \
+ 		$(RAVE_LIB_FLAG)
+ 
+ ifeq ($(EXPAT_SUPPRESSED), no)
 @@ -99,12 +99,12 @@ $(IRIS2ODIMBINDEB): $(IRIS2ODIMSOURCES)
  
  .PHONY=install

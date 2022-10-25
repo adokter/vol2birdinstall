@@ -145,8 +145,14 @@ rsl_cflags()
 {
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
+  if [ "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-I"`dpkg-query -L libtirpc-dev | grep "rpc/rpc.h" | sed -e "s/rpc\/rpc.h//g"`
+  elif [ "$OS_NAME" = "Ubuntu" ]; then
+    VERS=`echo $OS_VARIANT | sed -e "s/Ubuntu-//g"`
+    MAJOR=`echo $VERS | cut -d '.' -f1`
+    if [ $MAJOR -ge 20 ]; then
+      echo "-I"`dpkg-query -L libtirpc-dev | grep "rpc/rpc.h" | sed -e "s/rpc\/rpc.h//g"`
+    fi
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     echo "-I/usr/include/tirpc"
   fi
@@ -157,8 +163,14 @@ rsl_ldflags()
 {
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`  
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
+  if [ "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-L"`dpkg-query -L libtirpc-dev | egrep -e 'libtirpc.so$' | sed -e "s/\/libtirpc.so//g"`
+  elif [ "$OS_NAME" = "Ubuntu" ]; then
+    VERS=`echo $OS_VARIANT | sed -e "s/Ubuntu-//g"`
+    MAJOR=`echo $VERS | cut -d '.' -f1`
+    if [ $MAJOR -ge 20 ]; then
+      echo "-L"`dpkg-query -L libtirpc-dev | egrep -e 'libtirpc.so$' | sed -e "s/\/libtirpc.so//g"`
+    fi
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     echo "-ltirpc"
   fi
@@ -169,8 +181,14 @@ rsl_libs()
 {
   OS_VARIANT=`get_os_version`
   OS_NAME=`get_os_name`  
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
+  if [ "$OS_NAME" = "Debian GNU/Linux" ]; then
     echo "-ltirpc"
+  elif [ "$OS_NAME" = "Ubuntu" ]; then
+    VERS=`echo $OS_VARIANT | sed -e "s/Ubuntu-//g"`
+    MAJOR=`echo $VERS | cut -d '.' -f1`
+    if [ $MAJOR -ge 20 ]; then
+      echo "-ltirpc"
+    fi
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     echo "-ltirpc"
   fi
@@ -242,8 +260,14 @@ get_vol2bird_configure_LIBS()
   OS_NAME=`get_os_name`  
   VOL2BIRD_configure_LIBS=
   
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
+  if [ "$OS_NAME" = "Debian GNU/Linux" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
+  elif [ "$OS_NAME" = "Ubuntu" ]; then
+    VERS=`echo $OS_VARIANT | sed -e "s/Ubuntu-//g"`
+    MAJOR=`echo $VERS | cut -d '.' -f1`
+    if [ $MAJOR -ge 20 ]; then
+      VOL2BIRD_configure_LIBS="-ltirpc"
+    fi
   elif [ "$OS_VARIANT" = "CentOS-8" -o "$OS_VARIANT" = "RedHat-8" -o "$OS_NAME" = "Rocky Linux" ]; then
     VOL2BIRD_configure_LIBS=-ltirpc
   else
@@ -357,7 +381,7 @@ install_rave()
   
   cd "$BUILDDIR/rave" || exit_with_error 127 "(RAVE) Could not change to folder $BUILDDIR/rave"
   
-  #patch -p1 < "$PATCHDIR/rave.patch" || exit_with_error 127 "(RAVE) Could not patch system for building"
+  patch -p1 < "$PATCHDIR/rave.patch" || exit_with_error 127 "(RAVE) Could not patch system for building"
 
   RAVE_CONFIG_PARAM=`rave_config_param $PREFIX`
 
@@ -437,7 +461,7 @@ install_rsl()
 
   cd "$BUILDDIR/rsl" || exit_with_error 127 "(IRIS2ODIM) Could not change to folder $BUILDDIR/rsl"
 
-  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
+  if [ "$OS_VARIANT" = "Ubuntu-20.10" -o "$OS_VARIANT" = "Ubuntu-21.04" -o "$OS_VARIANT" = "Ubuntu-21.10" -o "$OS_VARIANT" = "Ubuntu-22.04" -o "$OS_VARIANT" = "Ubuntu-22.10" -o "$OS_NAME" = "Debian GNU/Linux" ]; then
     patch -p1 < "$PATCHDIR/rsl_tirpc.patch" || exit_with_error 127 "(RSL) Failed to patch system"
   fi
   #patch -p1 < "$PATCHDIR/rsl_fwd_declarations.patch" || exit_with_error 127 "(RSL) Failed to patch fwd declarations"
