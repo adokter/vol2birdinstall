@@ -1,7 +1,8 @@
 ## Vertical profiling of biological scatterers installer
 The vol2bird installer provides install scripts for building the software from various software repositories. It currently supports.
- + Ubuntu 18.04 & 18.10
+ + Ubuntu 22.04
  + Ubuntu 21.04
+ + Ubuntu 18.04 & 18.10
  + CentOS 8
  + RedHat 8 (see RedHat Prerequisities below)
  + Mac OS Intel
