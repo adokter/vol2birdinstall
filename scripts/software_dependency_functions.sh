@@ -32,7 +32,7 @@ RAVE_SOURCE_CODE=https://github.com/baltrad/rave.git
 RAVE_VERSION=rave-build-39
 
 IRIS2ODIM_SOURCE_CODE=https://github.com/adokter/iris2odim.git
-IRIS2ODIM_VERSION=96df3dc20a397f9c630c79a6157ffd88a7b03cb3
+IRIS2ODIM_VERSION=71db003522835d1e566c87f5c8d730f9888a52a5
 
 RSL_SOURCE_CODE=https://github.com/adokter/rsl.git
 RSL_VERSION=740f89e129b8e0a78eaee61f33626d3bf4b17ea5
