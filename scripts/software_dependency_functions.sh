@@ -35,7 +35,7 @@ IRIS2ODIM_SOURCE_CODE=https://github.com/adokter/iris2odim.git
 IRIS2ODIM_VERSION=71db003522835d1e566c87f5c8d730f9888a52a5
 
 RSL_SOURCE_CODE=https://github.com/adokter/rsl.git
-RSL_VERSION=740f89e129b8e0a78eaee61f33626d3bf4b17ea5
+RSL_VERSION=28bcb71dc13034d1d8dc4e092516f5d88587af52
 
 VOL2BIRD_SOURCE_CODE=https://github.com/adokter/vol2bird.git
 VOL2BIRD_VERSION=7fe2dc24626651cb7f6c74b3d1dd4025c62337af
